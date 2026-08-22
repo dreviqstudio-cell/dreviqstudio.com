@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Contact | Dreviq Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="wrap-lg nav-row">
+    <a href="index.html" class="brand">
+      <img src="logo-icon.png" alt="Dreviq Studio" class="brand-mark">
+      <span class="brand-name">DREVIQ STUDIO</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="process.html">Process</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="about.html">About</a>
+    </nav>
+    <a href="contact.html" class="btn btn-primary btn-sm nav-cta">Book Discovery Call</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a>
+    <a href="services.html">Services</a>
+    <a href="process.html">Process</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="about.html">About</a>
+    <a href="contact.html" class="btn btn-primary btn-sm" style="margin-top:8px;">Book Discovery Call</a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-glow"></div>
+  <div class="wrap-md">
+    <div class="eyebrow">Start Creation</div>
+    <h1>Request your sample asset.</h1>
+    <p>Four quick inputs to initiate your custom Brand DNA model.</p>
+  </div>
+</section>
+
+<section class="section-alt" style="padding-top:0;">
+  <div class="wrap-lg">
+    <form class="card intake-card" id="intakeForm" novalidate>
+      <div class="steps-track" id="stepsTrack">
+        <div class="dot active" data-dot="0">1</div>
+        <span class="lbl active" data-lbl="0">Brand</span>
+        <div class="line" data-line="0"></div>
+        <div class="dot" data-dot="1">2</div>
+        <span class="lbl" data-lbl="1">Scope</span>
+        <div class="line" data-line="1"></div>
+        <div class="dot" data-dot="2">3</div>
+        <span class="lbl" data-lbl="2">Timeline</span>
+        <div class="line" data-line="2"></div>
+        <div class="dot" data-dot="3">4</div>
+        <span class="lbl" data-lbl="3">Contact</span>
+      </div>
+
+      <div class="form-step active" data-step="0">
+        <div>
+          <label class="field-label">Brand Name</label>
+          <input class="text-input" id="fBrand" placeholder="e.g. Masala Craft" />
+        </div>
+        <div>
+          <label class="field-label">Business Vertical</label>
+          <div class="chip-grid cols-3" id="categoryChips">
+            <button type="button" class="chip" data-val="D2C E-Commerce">D2C E-Commerce</button>
+            <button type="button" class="chip" data-val="Café &amp; F&amp;B">Café &amp; F&amp;B</button>
+            <button type="button" class="chip" data-val="Fashion">Fashion</button>
+            <button type="button" class="chip" data-val="Real Estate">Real Estate</button>
+            <button type="button" class="chip" data-val="SaaS">SaaS</button>
+            <button type="button" class="chip" data-val="Other">Other</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-step" data-step="1">
+        <div>
+          <label class="field-label">Select Creative Formats Needed</label>
+          <div class="chip-grid" id="assetChips">
+            <button type="button" class="chip" data-val="AI Avatars & UGC">AI Avatars &amp; UGC</button>
+            <button type="button" class="chip" data-val="Product Photography">Product Photography</button>
+            <button type="button" class="chip" data-val="Brand Identity">Brand Identity</button>
+            <button type="button" class="chip" data-val="Full Retainer">Full Retainer</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-step" data-step="2">
+        <div>
+          <label class="field-label">Production Turnaround SLA</label>
+          <div class="pill-row" id="timelinePills">
+            <button type="button" class="pill" data-val="Within 48h">Within 48h</button>
+            <button type="button" class="pill" data-val="This Month">This Month</button>
+            <button type="button" class="pill" data-val="Flexible">Flexible</button>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Primary Advertising Channel</label>
+          <div class="pill-row" id="platformPills">
+            <button type="button" class="pill" data-val="Meta Ads">Meta Ads</button>
+            <button type="button" class="pill" data-val="YouTube Shorts">YouTube Shorts</button>
+            <button type="button" class="pill" data-val="Direct Web">Direct Web</button>
+            <button type="button" class="pill" data-val="Multi-channel">Multi-channel</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-step" data-step="3">
+        <div>
+          <label class="field-label">Business Email</label>
+          <input class="text-input" id="fEmail" type="email" placeholder="founder@brand.com" />
+        </div>
+        <div>
+          <label class="field-label">WhatsApp Contact (for instant sample delivery)</label>
+          <input class="text-input" id="fWhatsapp" type="tel" placeholder="+91 98000 00000" />
+        </div>
+      </div>
+
+      <div class="form-nav">
+        <button type="button" class="link-btn" id="backBtn" disabled>← Back</button>
+        <button type="submit" class="form-primary" id="nextBtn" disabled>Continue →</button>
+      </div>
+    </form>
+
+    <div class="card intake-card success-box" id="successBox" style="display:none;">
+      <div class="success-icon">✓</div>
+      <h3>Discovery Brief Received</h3>
+      <p>We are analyzing creative requirements for <strong style="color:var(--hi)" id="successBrand"></strong>. Our team will deliver a structured preview link to <span id="successEmail" style="color:var(--hi)"></span> within 4 hours.</p>
+    </div>
+
+    <div class="contact-alt">
+      <a href="mailto:hello@dreviqstudio.com">✉️ hello@dreviqstudio.com</a>
+      <a href="#">💬 WhatsApp Us</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap-lg foot-grid">
+    <div class="foot-brand">
+      <div class="brand">
+        <img src="logo-icon.png" alt="Dreviq Studio" class="brand-mark">
+        <span class="brand-name">DREVIQ STUDIO</span>
+      </div>
+      <p>The Creative AI Operating System powering high-volume performance brands.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Studio</h4>
+      <ul>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="process.html">Process</a></li>
+        <li><a href="pricing.html">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="about.html">About</a></li>
+        <li><a href="portfolio.html">Portfolio</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Commercial Licensing</a></li>
+        <li><a href="#">Data Privacy SOP</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap-lg foot-bottom">
+    <span>© 2026 Dreviq Studio. All Rights Reserved.</span>
+    <span>www.dreviqstudio.com</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
