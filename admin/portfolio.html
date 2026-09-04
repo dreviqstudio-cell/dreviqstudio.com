@@ -134,7 +134,9 @@
   </div>
 </main>
 
-<script>
+<script type="module">
+  import { upload } from 'https://esm.sh/@vercel/blob@2.8.0/client';
+
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/admin-logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
@@ -152,13 +154,20 @@
     rawField.style.display = featuredHomeEl.checked ? 'block' : 'none';
   });
 
-  function readFileAsDataUrl(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+  function fileExt(file) {
+    const fromName = file.name.split('.').pop();
+    if (fromName && fromName.length <= 5) return fromName.toLowerCase();
+    return (file.type.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '');
+  }
+
+  async function uploadDirect(pathname, file, onProgress) {
+    const blob = await upload(pathname, file, {
+      access: 'private',
+      handleUploadUrl: '/api/admin-portfolio-upload-token',
+      multipart: true,
+      onUploadProgress: onProgress,
     });
+    return blob.pathname;
   }
 
   const form = document.getElementById('uploadForm');
@@ -171,35 +180,53 @@
     errorBanner.classList.remove('show');
     okBanner.classList.remove('show');
     uploadBtn.disabled = true;
-    uploadBtn.textContent = 'Uploading...';
 
     try {
       const mediaFile = document.getElementById('mediaFile').files[0];
       if (!mediaFile) throw new Error('Please choose a main file.');
 
-      const payload = {
-        title: document.getElementById('title').value,
-        category: document.getElementById('category').value,
-        description: document.getElementById('description').value,
-        mediaType: mediaTypeEl.value,
-        mediaDataUrl: await readFileAsDataUrl(mediaFile),
-        featuredHome: featuredHomeEl.checked,
-      };
+      const id = `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
+      uploadBtn.textContent = 'Uploading main file...';
+      const mediaPathname = await uploadDirect(
+        `portfolio/${id}/media.${fileExt(mediaFile)}`,
+        mediaFile,
+        (p) => { uploadBtn.textContent = `Uploading main file... ${Math.round(p.percentage)}%`; }
+      );
+
+      let posterPathname = null;
       const posterFile = document.getElementById('posterFile').files[0];
-      if (posterFile) payload.posterDataUrl = await readFileAsDataUrl(posterFile);
+      if (posterFile) {
+        uploadBtn.textContent = 'Uploading poster...';
+        posterPathname = await uploadDirect(`portfolio/${id}/poster.${fileExt(posterFile)}`, posterFile);
+      }
 
+      let rawPathname = null;
       const rawFile = document.getElementById('rawFile').files[0];
-      if (rawFile) payload.rawDataUrl = await readFileAsDataUrl(rawFile);
+      if (rawFile) {
+        uploadBtn.textContent = 'Uploading raw/before image...';
+        rawPathname = await uploadDirect(`portfolio/${id}/raw.${fileExt(rawFile)}`, rawFile);
+      }
 
-      const res = await fetch('/api/admin-portfolio-upload', {
+      uploadBtn.textContent = 'Saving...';
+      const res = await fetch('/api/admin-portfolio-finalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          id,
+          title: document.getElementById('title').value,
+          category: document.getElementById('category').value,
+          description: document.getElementById('description').value,
+          mediaType: mediaTypeEl.value,
+          mediaPathname,
+          posterPathname,
+          rawPathname,
+          featuredHome: featuredHomeEl.checked,
+        }),
       });
       const data = await res.json();
       if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
-      if (!res.ok) throw new Error(data.details ? data.details.join(', ') : (data.error || 'Upload failed'));
+      if (!res.ok) throw new Error(data.details ? data.details.join(', ') : (data.error || 'Save failed'));
 
       okBanner.textContent = 'Uploaded! Now live on the public site.';
       okBanner.classList.add('show');
