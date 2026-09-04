@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Manage Portfolio | Dreviq Studio</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-header{ position:sticky; top:0; z-index:50; background:rgba(11,15,23,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .admin-header .row{ height:64px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-header .brand{ display:flex; align-items:center; gap:10px; }
+  .admin-header .brand img{ width:30px; height:30px; }
+  .admin-header .brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-header nav{ display:flex; gap:18px; }
+  .admin-header nav a{ font-size:13px; color:var(--mid); }
+  .admin-header nav a.current{ color:var(--hi); }
+  .admin-main{ padding:40px 0 80px; }
+  .admin-page-title{ font-size:24px; margin-bottom:6px; }
+  .admin-page-sub{ color:var(--mid); font-size:14px; margin-bottom:26px; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:13px; color:var(--mid); margin-bottom:6px; }
+  .field input[type=text], .field select, .field textarea, .field input[type=file]{
+    width:100%; padding:10px 13px; border-radius:10px; font-size:13.5px;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi); font-family:var(--body);
+  }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .checkbox-row{ display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .upload-form{ padding:24px; margin-bottom:36px; }
+  .banner{ padding:12px 16px; border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
+  .banner.error{ background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); color:#F87171; }
+  .banner.ok{ background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.3); color:#34D399; }
+  .banner.show{ display:block; }
+  .items-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+  .item-card{ padding:14px; }
+  .item-card img, .item-card video{ width:100%; height:130px; object-fit:cover; border-radius:8px; margin-bottom:10px; background:#000; }
+  .item-card h4{ font-size:14px; margin-bottom:4px; }
+  .item-card .cat{ font-size:11px; color:var(--indigo-soft); margin-bottom:8px; }
+  .item-card .badge{ font-size:10px; color:#34D399; margin-bottom:8px; }
+  .item-card .delete-btn{ background:rgba(248,113,113,0.1); border:1px solid rgba(248,113,113,0.3); color:#F87171; border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; width:100%; }
+  .hint{ font-size:11px; color:var(--low); margin-top:4px; }
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="wrap-lg row">
+    <div class="brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO — ADMIN</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Production</a>
+      <a href="portfolio.html" class="current">Portfolio</a>
+      <a href="leads.html">Shilpi Conversations</a>
+    </nav>
+    <button id="logoutBtn" style="background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px;">Log out</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap-lg">
+    <h1 class="admin-page-title">Manage portfolio</h1>
+    <p class="admin-page-sub">Uploads appear directly on the public Portfolio page. Mark one "Feature on homepage" to also use it in the homepage's before/after pipeline showcase (needs a Raw/Before image).</p>
+
+    <div class="banner error" id="errorBanner"></div>
+    <div class="banner ok" id="okBanner"></div>
+
+    <form id="uploadForm" class="card upload-form">
+      <div class="field-row">
+        <div class="field">
+          <label for="title">Title</label>
+          <input type="text" id="title" required placeholder="e.g. Synthetic UGC — Skincare Launch" />
+        </div>
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category">
+            <option>Synthetic UGC & AI Avatars</option>
+            <option>AI Lifestyle & Product Photography</option>
+            <option>Branding & Identity</option>
+            <option>Performance & Ad Creative</option>
+            <option>Menus, Catalogs & Landing Pages</option>
+            <option>Social Reels & Shorts</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Short caption shown under the item"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="mediaType">Media type</label>
+          <select id="mediaType">
+            <option value="video">Video</option>
+            <option value="image">Image</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="mediaFile">Main file (finished result)</label>
+          <input type="file" id="mediaFile" accept="image/*,video/*" required />
+        </div>
+      </div>
+
+      <div class="field" id="posterField" style="display:none;">
+        <label for="posterFile">Video poster/thumbnail image</label>
+        <input type="file" id="posterFile" accept="image/*" />
+      </div>
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="featuredHome" />
+        <label for="featuredHome" style="margin:0;">Feature on homepage pipeline showcase</label>
+      </div>
+
+      <div class="field" id="rawField" style="display:none;">
+        <label for="rawFile">Raw/Before image (paired with main file for the homepage slider)</label>
+        <input type="file" id="rawFile" accept="image/*" />
+        <div class="hint">Only used if "Feature on homepage" is checked. Should be an image (the raw/unedited version).</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="uploadBtn" style="margin-top:6px;">Upload</button>
+    </form>
+
+    <h2 style="font-size:18px; margin-bottom:14px;">Existing items</h2>
+    <div class="items-grid" id="itemsGrid">
+      <div style="color:var(--mid); font-size:13px;">Loading...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/admin-logout', { method: 'POST' });
+    window.location.href = '/admin/login.html';
+  });
+
+  const mediaTypeEl = document.getElementById('mediaType');
+  const posterField = document.getElementById('posterField');
+  const featuredHomeEl = document.getElementById('featuredHome');
+  const rawField = document.getElementById('rawField');
+
+  mediaTypeEl.addEventListener('change', () => {
+    posterField.style.display = mediaTypeEl.value === 'video' ? 'block' : 'none';
+  });
+  featuredHomeEl.addEventListener('change', () => {
+    rawField.style.display = featuredHomeEl.checked ? 'block' : 'none';
+  });
+
+  function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const form = document.getElementById('uploadForm');
+  const errorBanner = document.getElementById('errorBanner');
+  const okBanner = document.getElementById('okBanner');
+  const uploadBtn = document.getElementById('uploadBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorBanner.classList.remove('show');
+    okBanner.classList.remove('show');
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = 'Uploading...';
+
+    try {
+      const mediaFile = document.getElementById('mediaFile').files[0];
+      if (!mediaFile) throw new Error('Please choose a main file.');
+
+      const payload = {
+        title: document.getElementById('title').value,
+        category: document.getElementById('category').value,
+        description: document.getElementById('description').value,
+        mediaType: mediaTypeEl.value,
+        mediaDataUrl: await readFileAsDataUrl(mediaFile),
+        featuredHome: featuredHomeEl.checked,
+      };
+
+      const posterFile = document.getElementById('posterFile').files[0];
+      if (posterFile) payload.posterDataUrl = await readFileAsDataUrl(posterFile);
+
+      const rawFile = document.getElementById('rawFile').files[0];
+      if (rawFile) payload.rawDataUrl = await readFileAsDataUrl(rawFile);
+
+      const res = await fetch('/api/admin-portfolio-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+      if (!res.ok) throw new Error(data.details ? data.details.join(', ') : (data.error || 'Upload failed'));
+
+      okBanner.textContent = 'Uploaded! Now live on the public site.';
+      okBanner.classList.add('show');
+      form.reset();
+      posterField.style.display = 'none';
+      rawField.style.display = 'none';
+      loadItems();
+    } catch (err) {
+      errorBanner.textContent = err.message;
+      errorBanner.classList.add('show');
+    } finally {
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Upload';
+    }
+  });
+
+  const itemsGrid = document.getElementById('itemsGrid');
+
+  async function loadItems() {
+    const res = await fetch('/api/portfolio-items');
+    const data = await res.json();
+    if (!data.items || !data.items.length) {
+      itemsGrid.innerHTML = '<div style="color:var(--mid); font-size:13px;">No items yet.</div>';
+      return;
+    }
+    itemsGrid.innerHTML = '';
+    data.items.forEach((item) => {
+      const mediaUrl = '/api/portfolio-media?path=' + encodeURIComponent(item.mediaPathname);
+      const posterUrl = item.posterPathname ? '/api/portfolio-media?path=' + encodeURIComponent(item.posterPathname) : '';
+      const mediaEl = item.mediaType === 'video'
+        ? `<video src="${mediaUrl}" poster="${posterUrl}" muted controls></video>`
+        : `<img src="${mediaUrl}" alt="${item.title}">`;
+      const card = document.createElement('div');
+      card.className = 'card item-card';
+      card.innerHTML = `
+        ${mediaEl}
+        <h4>${item.title}</h4>
+        <div class="cat">${item.category}</div>
+        ${item.featuredHome ? '<div class="badge">★ Featured on homepage</div>' : ''}
+        <button class="delete-btn" data-id="${item.id}">Delete</button>
+      `;
+      card.querySelector('.delete-btn').addEventListener('click', () => deleteItem(item.id));
+      itemsGrid.appendChild(card);
+    });
+  }
+
+  async function deleteItem(id) {
+    if (!confirm('Delete this portfolio item? This cannot be undone.')) return;
+    const res = await fetch('/api/admin-portfolio-delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+    if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+    loadItems();
+  }
+
+  loadItems();
+</script>
+</body>
+</html>
