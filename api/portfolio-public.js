@@ -1,13 +1,32 @@
 import { list, get } from "@vercel/blob";
 
-/**
- * PUBLIC (no auth) — returns published portfolio items for the public
- * site (portfolio.html and index.html's pipeline showcase) to render.
- * Node.js runtime — @vercel/blob needs Node builtins.
- */
+// Combines portfolio-items.js (list) + portfolio-media.js (stream one
+// file) — see api/admin-auth.js for why (12-function Hobby plan cap).
+// PUBLIC (no auth) — both were already public.
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     res.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  const path = req.query.path;
+
+  if (path) {
+    if (Array.isArray(path) || !/^portfolio\/[a-zA-Z0-9_.\/-]+$/.test(path) || path.includes("..")) {
+      res.status(400).json({ error: "Invalid path" });
+      return;
+    }
+    const result = await get(path, { access: "private" });
+    if (!result || result.statusCode !== 200) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const chunks = [];
+    for await (const chunk of result.stream) chunks.push(chunk);
+    const buffer = Buffer.concat(chunks.map((c) => Buffer.from(c)));
+    res.setHeader("Content-Type", result.blob.contentType || "application/octet-stream");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.status(200).send(buffer);
     return;
   }
 

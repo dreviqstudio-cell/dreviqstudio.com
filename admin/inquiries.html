@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Inquiries | Dreviq Studio</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-header{ position:sticky; top:0; z-index:50; background:rgba(11,15,23,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .admin-header .row{ height:64px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-header .brand{ display:flex; align-items:center; gap:10px; }
+  .admin-header .brand img{ width:30px; height:30px; }
+  .admin-header .brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-header nav{ display:flex; gap:18px; }
+  .admin-header nav a{ font-size:13px; color:var(--mid); }
+  .admin-header nav a.current{ color:var(--hi); }
+  .admin-main{ padding:40px 0 80px; }
+  .admin-page-title{ font-size:24px; margin-bottom:6px; }
+  .admin-page-sub{ color:var(--mid); font-size:14px; margin-bottom:26px; }
+  .inquiry-card{ padding:18px 20px; margin-bottom:14px; }
+  .inquiry-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+  .inquiry-brand{ font-family:var(--disp); font-size:16px; font-weight:600; }
+  .inquiry-date{ font-size:12px; color:var(--low); }
+  .inquiry-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:12px; }
+  .inquiry-field label{ display:block; font-size:11px; color:var(--low); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px; }
+  .inquiry-field div{ font-size:13.5px; color:var(--hi); }
+  .status-row{ display:flex; align-items:center; gap:8px; }
+  .status-badge{ font-size:11px; padding:4px 10px; border-radius:999px; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .status-new{ background:rgba(99,102,241,0.15); color:var(--indigo-soft); }
+  .status-contacted{ background:rgba(251,191,36,0.15); color:#FBBF24; }
+  .status-closed{ background:rgba(52,211,153,0.15); color:#34D399; }
+  .status-select{ background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi); border-radius:8px; padding:5px 10px; font-size:12px; }
+  .empty{ color:var(--mid); font-size:13px; }
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="wrap-lg row">
+    <div class="brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO — ADMIN</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Production</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="inquiries.html" class="current">Inquiries</a>
+      <a href="leads.html">Shilpi Conversations</a>
+    </nav>
+    <button id="logoutBtn" style="background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px;">Log out</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap-lg">
+    <h1 class="admin-page-title">Discovery call inquiries</h1>
+    <p class="admin-page-sub">Every submission from the contact page's intake form, most recent first.</p>
+
+    <div id="inquiriesList">
+      <div class="empty">Loading...</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
+    window.location.href = '/admin/login.html';
+  });
+
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+
+  const listEl = document.getElementById('inquiriesList');
+
+  async function loadInquiries() {
+    const res = await fetch('/api/admin-inquiries');
+    if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+    let data;
+    try { data = JSON.parse(await res.text()); } catch { listEl.innerHTML = '<div class="empty">Failed to load.</div>'; return; }
+
+    if (!data.inquiries || !data.inquiries.length) {
+      listEl.innerHTML = '<div class="empty">No inquiries yet — they\'ll appear here as soon as someone submits the contact form.</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    data.inquiries.forEach((inq) => {
+      const card = document.createElement('div');
+      card.className = 'card inquiry-card';
+      card.innerHTML = `
+        <div class="inquiry-top">
+          <span class="inquiry-brand">${inq.brand}</span>
+          <span class="inquiry-date">${fmtDate(inq.createdAt)}</span>
+        </div>
+        <div class="inquiry-grid">
+          <div class="inquiry-field"><label>Email</label><div><a href="mailto:${inq.email}" style="color:var(--indigo-soft);">${inq.email}</a></div></div>
+          <div class="inquiry-field"><label>WhatsApp</label><div>${inq.whatsapp || '—'}</div></div>
+          <div class="inquiry-field"><label>Vertical</label><div>${inq.category || '—'}</div></div>
+          <div class="inquiry-field"><label>Formats needed</label><div>${(inq.assets || []).join(', ') || '—'}</div></div>
+          <div class="inquiry-field"><label>Timeline</label><div>${inq.timeline || '—'}</div></div>
+          <div class="inquiry-field"><label>Channel</label><div>${inq.platform || '—'}</div></div>
+        </div>
+        <div class="status-row">
+          <span class="status-badge status-${inq.status}">${inq.status}</span>
+          <select class="status-select" data-id="${inq.id}">
+            <option value="new" ${inq.status === 'new' ? 'selected' : ''}>New</option>
+            <option value="contacted" ${inq.status === 'contacted' ? 'selected' : ''}>Contacted</option>
+            <option value="closed" ${inq.status === 'closed' ? 'selected' : ''}>Closed</option>
+          </select>
+        </div>
+      `;
+      card.querySelector('.status-select').addEventListener('change', async (e) => {
+        await fetch('/api/admin-inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: inq.id, status: e.target.value }),
+        });
+        loadInquiries();
+      });
+      listEl.appendChild(card);
+    });
+  }
+
+  loadInquiries();
+</script>
+</body>
+</html>

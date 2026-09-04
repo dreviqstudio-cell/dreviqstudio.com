@@ -3,11 +3,20 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Process | Dreviq Studio</title>
+<title>Data Privacy SOP | Dreviq Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+<style>
+  .legal-body{ padding:20px 0 60px; }
+  .legal-body h2{ font-size:20px; margin:36px 0 12px; font-family:var(--disp); }
+  .legal-body h2:first-child{ margin-top:0; }
+  .legal-body p, .legal-body li{ color:var(--mid); font-size:14.5px; line-height:1.75; }
+  .legal-body ul{ padding-left:20px; margin:8px 0; }
+  .legal-body li{ margin-bottom:6px; }
+  .legal-updated{ color:var(--low); font-size:12.5px; margin-top:8px; }
+</style>
 </head>
 <body>
 
@@ -20,7 +29,7 @@
     <nav class="nav-links">
       <a href="index.html">Home</a>
       <a href="services.html">Services</a>
-      <a href="process.html" class="current">Process</a>
+      <a href="process.html">Process</a>
       <a href="pricing.html">Pricing</a>
       <a href="portfolio.html">Portfolio</a>
       <a href="about.html">About</a>
@@ -33,7 +42,7 @@
   <div class="mobile-menu" id="mobileMenu">
     <a href="index.html">Home</a>
     <a href="services.html">Services</a>
-    <a href="process.html" class="current">Process</a>
+    <a href="process.html">Process</a>
     <a href="pricing.html">Pricing</a>
     <a href="portfolio.html">Portfolio</a>
     <a href="about.html">About</a>
@@ -44,63 +53,36 @@
 <section class="page-hero">
   <div class="page-hero-glow"></div>
   <div class="wrap-md">
-    <div class="eyebrow">Production Engine</div>
-    <h1>Four steps. Zero guesswork.</h1>
-    <p>The systematic assembly line powering every creative run, from raw brief to platform-ready deliverables.</p>
+    <div class="eyebrow">Legal</div>
+    <h1>Data Privacy SOP</h1>
+    <p>What we collect, why, and how it's handled.</p>
   </div>
 </section>
 
-<section class="section-alt">
-  <div class="wrap-lg">
-    <div class="workflow-grid">
-      <div class="step-list" id="stepList">
-        <button class="step-btn active" data-step="0">
-          <span class="step-num">Step 01</span>
-          <span class="step-title">Ingestion &amp; Brand DNA</span>
-        </button>
-        <button class="step-btn" data-step="1">
-          <span class="step-num">Step 02</span>
-          <span class="step-title">AI Model Conditioning</span>
-        </button>
-        <button class="step-btn" data-step="2">
-          <span class="step-num">Step 03</span>
-          <span class="step-title">Human-in-the-Loop Polish</span>
-        </button>
-        <button class="step-btn" data-step="3">
-          <span class="step-num">Step 04</span>
-          <span class="step-title">Multi-Channel Deployment</span>
-        </button>
-      </div>
-      <div class="card workflow-panel">
-        <div class="workflow-icon" id="wfIcon">📥</div>
-        <h3 id="wfTitle">Ingestion &amp; Brand DNA</h3>
-        <p id="wfDesc">We extract your brand rules, color palettes, product geometry, and typography hierarchies into a permanent memory layer.</p>
-      </div>
-    </div>
-  </div>
-</section>
+<section class="legal-body">
+  <div class="wrap-md">
+    <h2>What we collect</h2>
+    <p>When you use this site, we collect only what you give us directly:</p>
+    <ul>
+      <li><strong>Discovery Call form</strong> — brand name, business vertical, creative needs, timeline, preferred channel, business email, and WhatsApp number</li>
+      <li><strong>Shilpi (chat assistant)</strong> — the conversation itself, and any contact details you choose to share in it</li>
+      <li><strong>Reference/brand assets you upload</strong> for a project we're producing for you</li>
+    </ul>
+    <p>We do not use tracking cookies, ad pixels, or third-party analytics scripts on this site.</p>
 
-<section>
-  <div class="wrap-lg">
-    <div class="section-head center" style="margin-left:auto;margin-right:auto;text-align:center;">
-      <div class="eyebrow">Why It Matters</div>
-      <h2>Built on real production research.</h2>
-      <p>Key principles behind how the engine stays consistent as volume scales.</p>
-    </div>
-    <div class="grid-3">
-      <div class="card hoverable detail-card">
-        <h3>🎯 Brand Consistency</h3>
-        <p>Consistency becomes critical as content volume increases — reference-image conditioning and custom brand models reduce visual drift.</p>
-      </div>
-      <div class="card hoverable detail-card">
-        <h3>📐 Standardized Recipes</h3>
-        <p>Standardized prompt recipes reduce operator-to-operator variation, so quality doesn't depend on who's running the batch.</p>
-      </div>
-      <div class="card hoverable detail-card">
-        <h3>✅ Human Approval</h3>
-        <p>Human-in-the-loop review remains essential for commercial content and marketing claims — no output ships unchecked.</p>
-      </div>
-    </div>
+    <h2>Why we collect it</h2>
+    <p>Solely to respond to your inquiry, scope your project, and deliver the work you asked for. Nothing here is sold or shared with third parties for marketing purposes.</p>
+
+    <h2>Where it's stored</h2>
+    <p>Submissions are stored on Vercel's infrastructure (Vercel Blob storage), access-restricted to the Dreviq Studio team via a password-protected admin panel. Shilpi's conversations are processed by Anthropic's Claude API to generate responses.</p>
+
+    <h2>How long we keep it</h2>
+    <p>Inquiry and conversation records are kept while we're actively following up, and for reasonable record-keeping afterward. Reach out any time and we'll delete your data on request.</p>
+
+    <h2>Your rights</h2>
+    <p>You can ask us what we hold about you, ask us to correct it, or ask us to delete it, at any time — email <a href="mailto:dreviqstudio@gmail.com" style="color:var(--indigo-soft);">dreviqstudio@gmail.com</a>.</p>
+
+    <p class="legal-updated">Last updated: September 2026.</p>
   </div>
 </section>
 

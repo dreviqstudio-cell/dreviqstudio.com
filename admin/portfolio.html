@@ -56,6 +56,7 @@
     <nav>
       <a href="dashboard.html">Production</a>
       <a href="portfolio.html" class="current">Portfolio</a>
+      <a href="inquiries.html">Inquiries</a>
       <a href="leads.html">Shilpi Conversations</a>
     </nav>
     <button id="logoutBtn" style="background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px;">Log out</button>
@@ -156,7 +157,7 @@
   }
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await fetch('/api/admin-logout', { method: 'POST' });
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
   });
 
@@ -195,7 +196,7 @@
       const upload = await getUploadFn();
       const blob = await upload(pathname, file, {
         access: 'private',
-        handleUploadUrl: '/api/admin-portfolio-upload-token',
+        handleUploadUrl: '/api/admin-portfolio?action=token',
         multipart: true,
         onUploadProgress: onProgress,
       });
@@ -245,7 +246,7 @@
       }
 
       uploadBtn.textContent = 'Saving...';
-      const res = await fetch('/api/admin-portfolio-finalize', {
+      const res = await fetch('/api/admin-portfolio?action=finalize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -284,7 +285,7 @@
   async function loadItems() {
     let data;
     try {
-      const res = await fetch('/api/portfolio-items');
+      const res = await fetch('/api/portfolio-public');
       data = await safeJson(res);
     } catch (err) {
       itemsGrid.innerHTML = `<div style="color:#F87171; font-size:13px;">Could not load items: ${err.message}</div>`;
@@ -296,8 +297,8 @@
     }
     itemsGrid.innerHTML = '';
     data.items.forEach((item) => {
-      const mediaUrl = '/api/portfolio-media?path=' + encodeURIComponent(item.mediaPathname);
-      const posterUrl = item.posterPathname ? '/api/portfolio-media?path=' + encodeURIComponent(item.posterPathname) : '';
+      const mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
+      const posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
       const mediaEl = item.mediaType === 'video'
         ? `<video src="${mediaUrl}" poster="${posterUrl}" muted controls></video>`
         : `<img src="${mediaUrl}" alt="${item.title}">`;
@@ -317,7 +318,7 @@
 
   async function deleteItem(id) {
     if (!confirm('Delete this portfolio item? This cannot be undone.')) return;
-    const res = await fetch('/api/admin-portfolio-delete', {
+    const res = await fetch('/api/admin-portfolio?action=delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id }),

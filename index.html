@@ -44,75 +44,74 @@
 
 <section class="hero">
   <div class="hero-glow"></div>
-  <div class="wrap-lg hero-grid">
+  <div class="wrap-lg hero-grid" style="grid-template-columns:1fr; max-width:720px; margin:0 auto; text-align:center;">
     <div>
       <div class="eyebrow">⚡ Next-Gen AI Creative Engine</div>
       <h1>Scale your brand's creatives without traditional agency overhead.</h1>
-      <p class="sub">From hyper-realistic synthetic UGC creators to cinematic product visuals and high-converting ad variants—engineered in 48 hours.</p>
-      <div class="hero-ctas">
+      <p class="sub" style="margin-left:auto; margin-right:auto;">From hyper-realistic synthetic UGC creators to cinematic product visuals and high-converting ad variants—engineered in 48 hours.</p>
+      <div class="hero-ctas" style="justify-content:center;">
         <a href="contact.html" class="btn btn-primary">Claim Free 2-Asset Trial →</a>
         <a href="process.html" class="btn btn-ghost">Explore Workflows</a>
       </div>
-      <div class="trust-row">
+      <div class="trust-row" style="justify-content:center;">
         <span>🛡 Zero Studio Bookings</span>
         <span>🛡 100% Commercial Rights</span>
       </div>
     </div>
-    <div>
-      <div class="reveal" id="reveal">
-        <div class="reveal-raw">
-          <div class="raw-box">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#5B6478" stroke-width="1.6"><path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9m18 0-4-4-4 4m-6 0-2-2-2 2M3 15h18v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-            Raw Packshot
-          </div>
-          <span class="reveal-tag">Raw Asset</span>
-        </div>
-        <div class="reveal-clip" id="revealClip">
-          <div class="reveal-render">
-            <div class="render-box">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 3v3m0 12v3m9-9h-3M6 12H3m14.5-6.5-2 2m-9 9-2 2m13 0-2-2m-9-9-2-2"/><circle cx="12" cy="12" r="4"/></svg>
-              <span>Commercial Render</span>
-            </div>
-          </div>
-          <span class="reveal-tag">Dreviq AI Pipeline</span>
-        </div>
-        <div class="reveal-handle" id="revealHandle">
-          <div class="reveal-handle-line"></div>
-          <div class="reveal-handle-knob">◂▸</div>
-        </div>
-      </div>
+  </div>
+</section>
+
+<section class="section-alt">
+  <style>
+    .works-slider-wrap{ position:relative; }
+    .works-slider{ display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 4px 12px; scrollbar-width:none; }
+    .works-slider::-webkit-scrollbar{ display:none; }
+    .works-card{ flex:0 0 280px; scroll-snap-align:start; border-radius:16px; overflow:hidden; background:var(--card); border:1px solid var(--border); }
+    .works-card video, .works-card img{ width:100%; height:180px; object-fit:cover; display:block; background:#000; }
+    .works-card-body{ padding:14px 16px; }
+    .works-card-body h4{ font-size:14px; margin-bottom:4px; font-family:var(--disp); font-weight:600; }
+    .works-card-body span{ font-size:11px; color:var(--indigo-soft); text-transform:uppercase; letter-spacing:0.05em; }
+    .works-arrow{ position:absolute; top:78px; transform:translateY(-50%); z-index:5; width:38px; height:38px; border-radius:50%; background:rgba(11,15,23,0.85); border:1px solid var(--border); color:var(--hi); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .works-arrow-left{ left:-6px; }
+    .works-arrow-right{ right:-6px; }
+    .works-empty{ color:var(--mid); font-size:14px; padding:50px 20px; text-align:center; width:100%; }
+    .works-empty a{ color:var(--indigo-soft); text-decoration:underline; }
+    @media (max-width:700px){ .works-arrow{ display:none; } }
+  </style>
+  <div class="wrap-lg">
+    <div class="section-head center" style="margin-left:auto;margin-right:auto;text-align:center;">
+      <div class="eyebrow">Our Works</div>
+      <h2>See it in motion.</h2>
+      <p>Real output from the Dreviq engine, added as we ship it — not stock footage.</p>
+    </div>
+    <div class="works-slider-wrap">
+      <button class="works-arrow works-arrow-left" id="worksPrev" aria-label="Previous">‹</button>
+      <div class="works-slider" id="worksSlider"><div class="works-empty">Loading…</div></div>
+      <button class="works-arrow works-arrow-right" id="worksNext" aria-label="Next">›</button>
     </div>
   </div>
   <script>
-    // Decorative placeholder boxes above are the default. If an admin has
-    // uploaded a portfolio item marked "Feature on homepage" with a
-    // raw/before image, swap in the real before/after pair instead.
     (function () {
-      fetch('/api/portfolio-items')
-        .then((r) => r.json())
-        .then((data) => {
-          const featured = (data.items || []).find((i) => i.featuredHome && i.rawPathname);
-          if (!featured) return;
-          const rawUrl = '/api/portfolio-media?path=' + encodeURIComponent(featured.rawPathname);
-          const mainUrl = '/api/portfolio-media?path=' + encodeURIComponent(featured.mediaPathname);
-          const rawEl = document.querySelector('.reveal-raw');
-          const renderEl = document.querySelector('.reveal-render');
-          if (rawEl) {
-            rawEl.style.backgroundImage = `url('${rawUrl}')`;
-            rawEl.style.backgroundSize = 'cover';
-            rawEl.style.backgroundPosition = 'center';
-            const box = rawEl.querySelector('.raw-box');
-            if (box) box.style.display = 'none';
-          }
-          if (renderEl) {
-            renderEl.style.backgroundImage = `url('${mainUrl}')`;
-            renderEl.style.backgroundSize = 'cover';
-            renderEl.style.backgroundPosition = 'center';
-            const box = renderEl.querySelector('.render-box');
-            if (box) box.style.display = 'none';
-          }
-        })
-        .catch(() => { /* keep the decorative placeholder on any error */ });
+      var slider = document.getElementById('worksSlider');
+      fetch('/api/portfolio-public').then(function(r){ return r.json(); }).then(function(data){
+        var items = data.items || [];
+        if (!items.length) {
+          slider.innerHTML = '<div class="works-empty">Portfolio launching soon — check back shortly, or explore our <a href="services.html">service breakdown</a> in the meantime.</div>';
+          return;
+        }
+        slider.innerHTML = items.map(function(item){
+          var mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
+          var posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
+          var mediaHtml = item.mediaType === 'video'
+            ? '<video src="' + mediaUrl + '" poster="' + posterUrl + '" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>'
+            : '<img src="' + mediaUrl + '" alt="' + item.title + '" loading="lazy">';
+          return '<div class="works-card">' + mediaHtml + '<div class="works-card-body"><h4>' + item.title + '</h4><span>' + item.category + '</span></div></div>';
+        }).join('');
+      }).catch(function(){
+        slider.innerHTML = '<div class="works-empty">Portfolio launching soon.</div>';
+      });
+      document.getElementById('worksPrev').addEventListener('click', function(){ slider.scrollBy({ left: -300, behavior: 'smooth' }); });
+      document.getElementById('worksNext').addEventListener('click', function(){ slider.scrollBy({ left: 300, behavior: 'smooth' }); });
     })();
   </script>
 </section>
@@ -190,8 +189,8 @@
     <div class="foot-col">
       <h4>Legal</h4>
       <ul>
-        <li><a href="#">Commercial Licensing</a></li>
-        <li><a href="#">Data Privacy SOP</a></li>
+        <li><a href="commercial-licensing.html">Commercial Licensing</a></li>
+        <li><a href="data-privacy-sop.html">Data Privacy SOP</a></li>
       </ul>
     </div>
   </div>

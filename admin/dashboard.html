@@ -49,6 +49,7 @@
     <nav style="display:flex; gap:18px;">
       <a href="dashboard.html" class="current" style="font-size:13px; color:var(--hi);">Production</a>
       <a href="portfolio.html" style="font-size:13px; color:var(--mid);">Portfolio</a>
+      <a href="inquiries.html" style="font-size:13px; color:var(--mid);">Inquiries</a>
       <a href="leads.html" style="font-size:13px; color:var(--mid);">Shilpi Conversations</a>
     </nav>
     <button class="logout-btn" id="logoutBtn">Log out</button>
@@ -115,7 +116,7 @@
 
 <script>
   document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await fetch('/api/admin-logout', { method: 'POST' });
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
   });
 
@@ -149,7 +150,7 @@
     }
 
     try {
-      const res = await fetch('/api/admin-submit-job', {
+      const res = await fetch('/api/admin-production', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -192,10 +193,10 @@
 
     if (job.status === 'complete') {
       const videoLink = job.resultVideoPathname
-        ? `<a href="/api/admin-job-file?path=${encodeURIComponent(job.resultVideoPathname)}" class="btn btn-sm btn-primary" download>Download video</a>`
+        ? `<a href="/api/admin-production?path=${encodeURIComponent(job.resultVideoPathname)}" class="btn btn-sm btn-primary" download>Download video</a>`
         : '';
       const srtLink = job.resultSrtPathname
-        ? `<a href="/api/admin-job-file?path=${encodeURIComponent(job.resultSrtPathname)}" class="btn btn-sm btn-ghost" download style="margin-left:8px;">Download subtitles</a>`
+        ? `<a href="/api/admin-production?path=${encodeURIComponent(job.resultSrtPathname)}" class="btn btn-sm btn-ghost" download style="margin-left:8px;">Download subtitles</a>`
         : '';
       jobStatusBody.innerHTML = videoLink + srtLink;
     } else if (job.status === 'failed') {
@@ -209,7 +210,7 @@
     if (pollTimer) clearInterval(pollTimer);
     const check = async () => {
       try {
-        const res = await fetch(`/api/admin-job-status?id=${encodeURIComponent(id)}`);
+        const res = await fetch(`/api/admin-production?id=${encodeURIComponent(id)}`);
         if (res.status === 401) {
           window.location.href = '/admin/login.html';
           return;
