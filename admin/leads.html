@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shilpi Conversations | Dreviq Studio</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-header{ position:sticky; top:0; z-index:50; background:rgba(11,15,23,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .admin-header .row{ height:64px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-header .brand{ display:flex; align-items:center; gap:10px; }
+  .admin-header .brand img{ width:30px; height:30px; }
+  .admin-header .brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-header nav{ display:flex; gap:18px; }
+  .admin-header nav a{ font-size:13px; color:var(--mid); }
+  .admin-header nav a.current{ color:var(--hi); }
+  .admin-main{ padding:40px 0 80px; }
+  .admin-page-title{ font-size:24px; margin-bottom:6px; }
+  .admin-page-sub{ color:var(--mid); font-size:14px; margin-bottom:26px; }
+  .layout{ display:grid; grid-template-columns: 320px 1fr; gap:20px; align-items:start; }
+  @media (max-width: 800px){ .layout{ grid-template-columns: 1fr; } }
+  .lead-list{ display:flex; flex-direction:column; gap:8px; max-height:70vh; overflow-y:auto; }
+  .lead-item{ padding:12px 14px; cursor:pointer; }
+  .lead-item.active{ border-color: var(--border-hi); background: var(--card-hover); }
+  .lead-item .sid{ font-size:11px; color:var(--low); margin-bottom:4px; }
+  .lead-item .preview{ font-size:13px; color:var(--hi); margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lead-item .meta{ font-size:11px; color:var(--mid); }
+  .transcript{ padding:20px; min-height:300px; }
+  .transcript-empty{ color:var(--mid); font-size:13px; }
+  .msg{ max-width:80%; padding:9px 13px; border-radius:14px; font-size:13.5px; line-height:1.5; white-space:pre-wrap; margin-bottom:10px; }
+  .msg.user{ margin-left:auto; background:#6366F1; color:#fff; border-bottom-right-radius:4px; }
+  .msg.assistant{ background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-bottom-left-radius:4px; }
+  .loading{ color:var(--mid); font-size:13px; padding:20px 0; }
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="wrap-lg row">
+    <div class="brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO — ADMIN</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Production</a>
+      <a href="leads.html" class="current">Shilpi Conversations</a>
+    </nav>
+    <button class="logout-btn" id="logoutBtn" style="background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px;">Log out</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap-lg">
+    <h1 class="admin-page-title">Shilpi's conversations</h1>
+    <p class="admin-page-sub">Every visitor chat, most recent first. Click one to read the full transcript.</p>
+
+    <div class="layout">
+      <div class="card lead-list" id="leadList">
+        <div class="loading">Loading...</div>
+      </div>
+      <div class="card transcript" id="transcript">
+        <div class="transcript-empty">Select a conversation to read it.</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/admin-logout', { method: 'POST' });
+    window.location.href = '/admin/login.html';
+  });
+
+  const leadListEl = document.getElementById('leadList');
+  const transcriptEl = document.getElementById('transcript');
+
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+
+  async function loadLeads() {
+    const res = await fetch('/api/admin-list-leads');
+    if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+    const data = await res.json();
+    if (!res.ok) {
+      leadListEl.innerHTML = `<div class="loading">Error: ${data.error || 'failed to load'}</div>`;
+      return;
+    }
+    if (!data.leads.length) {
+      leadListEl.innerHTML = `<div class="loading">No conversations yet.</div>`;
+      return;
+    }
+    leadListEl.innerHTML = '';
+    data.leads.forEach((lead) => {
+      const el = document.createElement('div');
+      el.className = 'card lead-item hoverable';
+      el.innerHTML = `
+        <div class="sid">${lead.sessionId.slice(0, 16)}</div>
+        <div class="preview">${lead.preview || '(no messages)'}</div>
+        <div class="meta">${lead.messageCount} messages · ${fmtDate(lead.updatedAt)}</div>
+      `;
+      el.addEventListener('click', () => openLead(lead.sessionId, el));
+      leadListEl.appendChild(el);
+    });
+  }
+
+  async function openLead(sessionId, el) {
+    document.querySelectorAll('.lead-item').forEach((i) => i.classList.remove('active'));
+    el.classList.add('active');
+    transcriptEl.innerHTML = '<div class="loading">Loading conversation...</div>';
+
+    const res = await fetch(`/api/admin-lead-detail?sessionId=${encodeURIComponent(sessionId)}`);
+    if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+    const data = await res.json();
+    if (!res.ok) {
+      transcriptEl.innerHTML = `<div class="transcript-empty">Error: ${data.error || 'failed to load'}</div>`;
+      return;
+    }
+    transcriptEl.innerHTML = '';
+    data.messages.forEach((m) => {
+      const el = document.createElement('div');
+      el.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant');
+      el.textContent = m.content;
+      transcriptEl.appendChild(el);
+    });
+  }
+
+  loadLeads();
+</script>
+</body>
+</html>
