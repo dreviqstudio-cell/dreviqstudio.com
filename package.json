@@ -4,6 +4,7 @@
   "type": "module",
   "description": "dreviqstudio.com — static marketing site + admin panel API routes",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
     "@vercel/blob": "^2.8.0"
   }
 }
