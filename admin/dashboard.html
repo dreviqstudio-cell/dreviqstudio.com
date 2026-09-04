@@ -56,10 +56,9 @@
     <p class="admin-page-sub">Submit a client brief for the content engine.</p>
 
     <div class="banner info show" id="stubBanner">
-      🚧 Backend not connected yet — this validates and records your brief,
-      but does not generate video. The real pipeline
-      (<code>dreviq_agent</code>) runs locally for now; wiring it to this
-      form needs an async job worker, which isn't built yet.
+      This queues a real job for the worker (Render background worker,
+      polling every ~15s). Generation still takes real minutes once it
+      picks the job up — this page will update automatically.
     </div>
 
     <div class="banner error" id="errorBanner"></div>
@@ -97,6 +96,14 @@
       <button type="submit" class="btn btn-primary" id="submitBtn">Submit brief</button>
     </form>
 
+    <div class="card job-status" id="jobStatus" style="display:none; margin-top:20px; padding:22px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+        <strong id="jobStatusLabel" style="font-family:var(--disp); font-size:15px;">Queued</strong>
+        <span id="jobIdLabel" style="font-size:12px; color:var(--mid);"></span>
+      </div>
+      <div id="jobStatusBody" style="font-size:13px; color:var(--mid);"></div>
+    </div>
+
     <pre class="result-pre" id="resultPre"></pre>
   </div>
 </main>
@@ -126,6 +133,16 @@
       sceneCount: Number(document.getElementById('sceneCount').value),
     };
 
+    const faceFile = document.getElementById('masterFace').files[0];
+    if (faceFile) {
+      payload.masterFaceDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(faceFile);
+      });
+    }
+
     try {
       const res = await fetch('/api/admin-submit-job', {
         method: 'POST',
@@ -141,8 +158,7 @@
         errorBanner.textContent = (data.details ? data.details.join(', ') : data.error) || 'Submission failed.';
         errorBanner.classList.add('show');
       } else {
-        resultPre.textContent = JSON.stringify(data, null, 2);
-        resultPre.style.display = 'block';
+        pollJob(data.job.id);
       }
     } catch {
       errorBanner.textContent = 'Network error — try again.';
@@ -152,6 +168,60 @@
       submitBtn.textContent = 'Submit brief';
     }
   });
+
+  const jobStatus = document.getElementById('jobStatus');
+  const jobStatusLabel = document.getElementById('jobStatusLabel');
+  const jobIdLabel = document.getElementById('jobIdLabel');
+  const jobStatusBody = document.getElementById('jobStatusBody');
+  let pollTimer = null;
+
+  function renderJob(job) {
+    jobStatus.style.display = 'block';
+    jobIdLabel.textContent = job.id;
+    jobStatusLabel.textContent = {
+      queued: 'Queued — waiting for worker',
+      processing: 'Processing…',
+      complete: 'Complete',
+      failed: 'Failed',
+    }[job.status] || job.status;
+
+    if (job.status === 'complete') {
+      const videoLink = job.resultVideoPathname
+        ? `<a href="/api/admin-job-file?path=${encodeURIComponent(job.resultVideoPathname)}" class="btn btn-sm btn-primary" download>Download video</a>`
+        : '';
+      const srtLink = job.resultSrtPathname
+        ? `<a href="/api/admin-job-file?path=${encodeURIComponent(job.resultSrtPathname)}" class="btn btn-sm btn-ghost" download style="margin-left:8px;">Download subtitles</a>`
+        : '';
+      jobStatusBody.innerHTML = videoLink + srtLink;
+    } else if (job.status === 'failed') {
+      jobStatusBody.textContent = job.error || 'Unknown error.';
+    } else {
+      jobStatusBody.textContent = 'Last updated: ' + new Date(job.updatedAt).toLocaleTimeString();
+    }
+  }
+
+  function pollJob(id) {
+    if (pollTimer) clearInterval(pollTimer);
+    const check = async () => {
+      try {
+        const res = await fetch(`/api/admin-job-status?id=${encodeURIComponent(id)}`);
+        if (res.status === 401) {
+          window.location.href = '/admin/login.html';
+          return;
+        }
+        if (!res.ok) return;
+        const job = await res.json();
+        renderJob(job);
+        if (job.status === 'complete' || job.status === 'failed') {
+          clearInterval(pollTimer);
+        }
+      } catch {
+        /* transient network error while polling — try again next tick */
+      }
+    };
+    check();
+    pollTimer = setInterval(check, 8000);
+  }
 </script>
 </body>
 </html>

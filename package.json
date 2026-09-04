@@ -2,5 +2,8 @@
   "name": "dreviqstudio-com",
   "private": true,
   "type": "module",
-  "description": "dreviqstudio.com — static marketing site + admin panel API routes"
+  "description": "dreviqstudio.com — static marketing site + admin panel API routes",
+  "dependencies": {
+    "@vercel/blob": "^2.8.0"
+  }
 }
