@@ -184,10 +184,33 @@
         currentStep++;
         renderStep();
       } else {
-        document.getElementById('intakeForm').style.display = 'none';
-        document.getElementById('successBrand').textContent = formData.brand;
-        document.getElementById('successEmail').textContent = formData.email;
-        document.getElementById('successBox').style.display = 'block';
+        var errEl = document.getElementById('intakeError');
+        if (errEl) errEl.style.display = 'none';
+        nextBtn.disabled = true;
+        nextBtn.textContent = 'Submitting...';
+
+        fetch('/api/discovery-call-submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        }).then(function(res){
+          return res.json().then(function(data){ return { ok: res.ok, data: data }; });
+        }).then(function(result){
+          if (!result.ok) {
+            throw new Error((result.data && result.data.error) || 'Submission failed');
+          }
+          document.getElementById('intakeForm').style.display = 'none';
+          document.getElementById('successBrand').textContent = formData.brand;
+          document.getElementById('successEmail').textContent = formData.email;
+          document.getElementById('successBox').style.display = 'block';
+        }).catch(function(err){
+          nextBtn.disabled = false;
+          nextBtn.textContent = 'Submit Brief →';
+          if (errEl) {
+            errEl.textContent = 'Something went wrong sending your brief — please try again, or reach us directly via WhatsApp/email below. (' + err.message + ')';
+            errEl.style.display = 'block';
+          }
+        });
       }
     });
 
