@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Login | Dreviq Studio</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-shell{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .admin-card{ width:100%; max-width:380px; padding:36px 32px; }
+  .admin-brand{ display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:28px; }
+  .admin-brand img{ width:30px; height:30px; }
+  .admin-brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-title{ font-size:20px; margin-bottom:6px; text-align:center; }
+  .admin-sub{ color:var(--mid); font-size:13px; text-align:center; margin-bottom:26px; }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-size:12px; color:var(--mid); margin-bottom:6px; }
+  .field input{
+    width:100%; padding:11px 14px; border-radius:10px; font-size:14px;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi);
+  }
+  .field input:focus{ outline:none; border-color:var(--border-hi); }
+  .admin-error{ display:none; color:#F87171; font-size:13px; margin-bottom:14px; text-align:center; }
+  .admin-submit{ width:100%; }
+</style>
+</head>
+<body>
+<div class="admin-shell">
+  <div class="card admin-card">
+    <div class="admin-brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO</span>
+    </div>
+    <h1 class="admin-title">Admin access</h1>
+    <p class="admin-sub">Internal use only.</p>
+    <p class="admin-error" id="errorMsg">Invalid credentials.</p>
+    <form id="loginForm">
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </div>
+      <button type="submit" class="btn btn-primary admin-submit" id="submitBtn">Log in</button>
+    </form>
+  </div>
+</div>
+<script>
+  const form = document.getElementById('loginForm');
+  const errorMsg = document.getElementById('errorMsg');
+  const submitBtn = document.getElementById('submitBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorMsg.style.display = 'none';
+    submitBtn.textContent = 'Logging in…';
+    submitBtn.disabled = true;
+
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get('next');
+        window.location.href = next && next.startsWith('/admin/') ? next : '/admin/dashboard.html';
+      } else {
+        errorMsg.style.display = 'block';
+        submitBtn.textContent = 'Log in';
+        submitBtn.disabled = false;
+      }
+    } catch {
+      errorMsg.textContent = 'Network error — try again.';
+      errorMsg.style.display = 'block';
+      submitBtn.textContent = 'Log in';
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
