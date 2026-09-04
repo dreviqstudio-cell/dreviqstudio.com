@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reviews | Dreviq Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<style>
+  .reviews-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px; margin-bottom:56px; }
+  .review-card{ padding:22px; }
+  .review-stars{ color:#FBBF24; font-size:15px; margin-bottom:10px; letter-spacing:2px; }
+  .review-comment{ font-size:14px; line-height:1.65; color:var(--hi); margin-bottom:16px; }
+  .review-who{ font-size:13px; color:var(--mid); }
+  .review-who strong{ color:var(--hi); font-weight:600; }
+  .reviews-empty{ color:var(--mid); font-size:14px; text-align:center; padding:30px 0 50px; }
+  .review-form-card{ padding:28px; max-width:640px; margin:0 auto; }
+  .rf-field{ margin-bottom:16px; }
+  .rf-field label{ display:block; font-size:13px; color:var(--mid); margin-bottom:6px; }
+  .rf-field input[type=text], .rf-field input[type=email], .rf-field select, .rf-field textarea{
+    width:100%; padding:11px 14px; border-radius:10px; font-size:13.5px;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi); font-family:var(--body);
+  }
+  .rf-field textarea{ min-height:90px; resize:vertical; }
+  .rf-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .star-picker{ display:flex; gap:6px; font-size:26px; }
+  .star-picker button{ background:none; border:none; cursor:pointer; color:var(--low); padding:0; line-height:1; }
+  .star-picker button.active{ color:#FBBF24; }
+  .rf-banner{ padding:12px 16px; border-radius:10px; font-size:13px; margin-bottom:16px; display:none; }
+  .rf-banner.error{ background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); color:#F87171; }
+  .rf-banner.ok{ background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.3); color:#34D399; }
+  .rf-banner.show{ display:block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap-lg nav-row">
+    <a href="index.html" class="brand">
+      <img src="logo-icon.png" alt="Dreviq Studio" class="brand-mark">
+      <span class="brand-name">DREVIQ STUDIO</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Services</a>
+      <a href="reviews.html" class="current">Reviews</a>
+      <a href="pricing.html">Pricing</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="about.html">About</a>
+    </nav>
+    <a href="contact.html" class="btn btn-primary btn-sm nav-cta">Book Discovery Call</a>
+    <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="index.html">Home</a>
+    <a href="services.html">Services</a>
+    <a href="reviews.html" class="current">Reviews</a>
+    <a href="pricing.html">Pricing</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="about.html">About</a>
+    <a href="contact.html" class="btn btn-primary btn-sm" style="margin-top:8px;">Book Discovery Call</a>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="page-hero-glow"></div>
+  <div class="wrap-md">
+    <div class="eyebrow">Our Work, Your Review</div>
+    <h1>What clients say after delivery.</h1>
+    <p>Real feedback from real projects — and if we've just finished yours, we'd love to hear from you below.</p>
+  </div>
+</section>
+
+<section class="section-alt" style="padding-top:0;">
+  <div class="wrap-lg">
+    <div id="reviewsGrid" class="reviews-grid">
+      <div class="reviews-empty">Loading…</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap-lg">
+    <div class="section-head center" style="margin-left:auto;margin-right:auto;text-align:center; margin-bottom:30px;">
+      <div class="eyebrow">Leave a Review</div>
+      <h2>Just got your project delivered?</h2>
+      <p>Tell us — and future clients — how it went.</p>
+    </div>
+
+    <div class="rf-banner error" id="rfError"></div>
+    <div class="rf-banner ok" id="rfOk"></div>
+
+    <form id="reviewForm" class="card review-form-card">
+      <div class="rf-row">
+        <div class="rf-field">
+          <label for="rName">Your name</label>
+          <input type="text" id="rName" required placeholder="e.g. Priya Sharma" />
+        </div>
+        <div class="rf-field">
+          <label for="rBrand">Brand / company</label>
+          <input type="text" id="rBrand" placeholder="e.g. Masala Craft" />
+        </div>
+      </div>
+
+      <div class="rf-field">
+        <label for="rService">Which service?</label>
+        <select id="rService">
+          <option value="">— Select —</option>
+          <option>Synthetic UGC & AI Avatars</option>
+          <option>AI Lifestyle & Product Photography</option>
+          <option>Branding & Identity</option>
+          <option>Performance & Ad Creative</option>
+          <option>Menus, Catalogs & Landing Pages</option>
+          <option>Social Reels & Shorts</option>
+        </select>
+      </div>
+
+      <div class="rf-field">
+        <label>Rating</label>
+        <div class="star-picker" id="starPicker">
+          <button type="button" data-val="1">★</button>
+          <button type="button" data-val="2">★</button>
+          <button type="button" data-val="3">★</button>
+          <button type="button" data-val="4">★</button>
+          <button type="button" data-val="5">★</button>
+        </div>
+      </div>
+
+      <div class="rf-field">
+        <label for="rComment">Your review</label>
+        <textarea id="rComment" required placeholder="How was the turnaround, quality, communication?"></textarea>
+      </div>
+
+      <div class="rf-field">
+        <label for="rEmail">Email (optional, kept private — just so we can follow up)</label>
+        <input type="email" id="rEmail" placeholder="you@brand.com" />
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="rSubmitBtn" style="width:100%;">Submit Review</button>
+      <p style="font-size:11.5px; color:var(--low); margin-top:12px; text-align:center;">Reviews are checked before they go live, so it may take a little while to appear.</p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap-lg foot-grid">
+    <div class="foot-brand">
+      <div class="brand">
+        <img src="logo-icon.png" alt="Dreviq Studio" class="brand-mark">
+        <span class="brand-name">DREVIQ STUDIO</span>
+      </div>
+      <p>The Creative AI Operating System powering high-volume performance brands.</p>
+    </div>
+    <div class="foot-col">
+      <h4>Studio</h4>
+      <ul>
+        <li><a href="services.html">Services</a></li>
+        <li><a href="process.html">Process</a></li>
+        <li><a href="pricing.html">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="about.html">About</a></li>
+        <li><a href="portfolio.html">Portfolio</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="commercial-licensing.html">Commercial Licensing</a></li>
+        <li><a href="data-privacy-sop.html">Data Privacy SOP</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap-lg foot-bottom">
+    <span>© 2026 Dreviq Studio. All Rights Reserved.</span>
+    <span>www.dreviqstudio.com</span>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+<script src="shilpi-widget.js" defer></script>
+<script>
+  (function () {
+    function stars(n) {
+      return '★★★★★☆☆☆☆☆'.slice(5 - n, 10 - n);
+    }
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    const grid = document.getElementById('reviewsGrid');
+    fetch('/api/reviews').then((r) => r.json()).then((data) => {
+      const reviews = data.reviews || [];
+      if (!reviews.length) {
+        grid.innerHTML = '<div class="reviews-empty">No reviews yet — be the first to share how your project went, below.</div>';
+        return;
+      }
+      grid.innerHTML = reviews.map((r) => `
+        <div class="card hoverable review-card">
+          <div class="review-stars">${stars(r.rating)}</div>
+          <p class="review-comment">"${escapeHtml(r.comment)}"</p>
+          <div class="review-who"><strong>${escapeHtml(r.name)}</strong>${r.brand ? ', ' + escapeHtml(r.brand) : ''}${r.service ? '<br>' + escapeHtml(r.service) : ''}</div>
+        </div>
+      `).join('');
+    }).catch(() => {
+      grid.innerHTML = '<div class="reviews-empty">Couldn\'t load reviews right now.</div>';
+    });
+
+    let selectedRating = 0;
+    const starButtons = document.querySelectorAll('#starPicker button');
+    starButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        selectedRating = Number(btn.getAttribute('data-val'));
+        starButtons.forEach((b) => {
+          b.classList.toggle('active', Number(b.getAttribute('data-val')) <= selectedRating);
+        });
+      });
+    });
+
+    const form = document.getElementById('reviewForm');
+    const rfError = document.getElementById('rfError');
+    const rfOk = document.getElementById('rfOk');
+    const rSubmitBtn = document.getElementById('rSubmitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      rfError.classList.remove('show');
+      rfOk.classList.remove('show');
+
+      if (!selectedRating) {
+        rfError.textContent = 'Please pick a star rating.';
+        rfError.classList.add('show');
+        return;
+      }
+
+      rSubmitBtn.disabled = true;
+      rSubmitBtn.textContent = 'Submitting…';
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: document.getElementById('rName').value,
+            brand: document.getElementById('rBrand').value,
+            service: document.getElementById('rService').value,
+            rating: selectedRating,
+            comment: document.getElementById('rComment').value,
+            email: document.getElementById('rEmail').value,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.details ? data.details.join(', ') : (data.error || 'Submission failed'));
+
+        rfOk.textContent = "Thank you! Your review is in — it'll appear here once approved.";
+        rfOk.classList.add('show');
+        form.reset();
+        selectedRating = 0;
+        starButtons.forEach((b) => b.classList.remove('active'));
+      } catch (err) {
+        rfError.textContent = err.message;
+        rfError.classList.add('show');
+      } finally {
+        rSubmitBtn.disabled = false;
+        rSubmitBtn.textContent = 'Submit Review';
+      }
+    });
+  })();
+</script>
+</body>
+</html>
