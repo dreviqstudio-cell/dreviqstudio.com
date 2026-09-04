@@ -135,7 +135,25 @@
 </main>
 
 <script type="module">
-  import { upload } from 'https://esm.sh/@vercel/blob@2.8.0/client';
+  // Loaded lazily (not as a static top-level import) so that if this CDN
+  // is blocked by a network policy or browser extension, the rest of the
+  // page (login, viewing/deleting existing items) still works — only the
+  // upload button fails, with a clear message pointing at the real cause.
+  let uploadFnPromise = null;
+  function getUploadFn() {
+    if (!uploadFnPromise) {
+      uploadFnPromise = import('https://esm.sh/@vercel/blob@2.8.0/client')
+        .then((mod) => mod.upload)
+        .catch((err) => {
+          uploadFnPromise = null; // allow retry on next submit
+          throw new Error(
+            `Could not load the upload library from esm.sh (${err.message || err}). ` +
+            `If you're on a network with an ad-blocker or content filter, try disabling it for this site, or a different network.`
+          );
+        });
+    }
+    return uploadFnPromise;
+  }
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/admin-logout', { method: 'POST' });
@@ -160,14 +178,31 @@
     return (file.type.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '');
   }
 
-  async function uploadDirect(pathname, file, onProgress) {
-    const blob = await upload(pathname, file, {
-      access: 'private',
-      handleUploadUrl: '/api/admin-portfolio-upload-token',
-      multipart: true,
-      onUploadProgress: onProgress,
-    });
-    return blob.pathname;
+  async function safeJson(res) {
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch {
+      // Server (or a proxy/CDN in front of it) returned something that
+      // isn't JSON — surface the real status + a snippet instead of a
+      // cryptic parse error, so the actual cause is visible next time.
+      throw new Error(`Unexpected response (HTTP ${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
+  async function uploadDirect(step, pathname, file, onProgress) {
+    try {
+      const upload = await getUploadFn();
+      const blob = await upload(pathname, file, {
+        access: 'private',
+        handleUploadUrl: '/api/admin-portfolio-upload-token',
+        multipart: true,
+        onUploadProgress: onProgress,
+      });
+      return blob.pathname;
+    } catch (err) {
+      throw new Error(`[${step}] ${err.message || err}`);
+    }
   }
 
   const form = document.getElementById('uploadForm');
@@ -189,6 +224,7 @@
 
       uploadBtn.textContent = 'Uploading main file...';
       const mediaPathname = await uploadDirect(
+        'main file upload',
         `portfolio/${id}/media.${fileExt(mediaFile)}`,
         mediaFile,
         (p) => { uploadBtn.textContent = `Uploading main file... ${Math.round(p.percentage)}%`; }
@@ -198,14 +234,14 @@
       const posterFile = document.getElementById('posterFile').files[0];
       if (posterFile) {
         uploadBtn.textContent = 'Uploading poster...';
-        posterPathname = await uploadDirect(`portfolio/${id}/poster.${fileExt(posterFile)}`, posterFile);
+        posterPathname = await uploadDirect('poster upload', `portfolio/${id}/poster.${fileExt(posterFile)}`, posterFile);
       }
 
       let rawPathname = null;
       const rawFile = document.getElementById('rawFile').files[0];
       if (rawFile) {
         uploadBtn.textContent = 'Uploading raw/before image...';
-        rawPathname = await uploadDirect(`portfolio/${id}/raw.${fileExt(rawFile)}`, rawFile);
+        rawPathname = await uploadDirect('raw image upload', `portfolio/${id}/raw.${fileExt(rawFile)}`, rawFile);
       }
 
       uploadBtn.textContent = 'Saving...';
@@ -224,9 +260,9 @@
           featuredHome: featuredHomeEl.checked,
         }),
       });
-      const data = await res.json();
       if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
-      if (!res.ok) throw new Error(data.details ? data.details.join(', ') : (data.error || 'Save failed'));
+      const data = await safeJson(res);
+      if (!res.ok) throw new Error(`[saving record] ${data.details ? data.details.join(', ') : (data.error || 'Save failed')}`);
 
       okBanner.textContent = 'Uploaded! Now live on the public site.';
       okBanner.classList.add('show');
@@ -246,8 +282,14 @@
   const itemsGrid = document.getElementById('itemsGrid');
 
   async function loadItems() {
-    const res = await fetch('/api/portfolio-items');
-    const data = await res.json();
+    let data;
+    try {
+      const res = await fetch('/api/portfolio-items');
+      data = await safeJson(res);
+    } catch (err) {
+      itemsGrid.innerHTML = `<div style="color:#F87171; font-size:13px;">Could not load items: ${err.message}</div>`;
+      return;
+    }
     if (!data.items || !data.items.length) {
       itemsGrid.innerHTML = '<div style="color:var(--mid); font-size:13px;">No items yet.</div>';
       return;
