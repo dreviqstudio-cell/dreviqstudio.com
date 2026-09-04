@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Moderate Reviews | Dreviq Studio</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-header{ position:sticky; top:0; z-index:50; background:rgba(11,15,23,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .admin-header .row{ height:64px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-header .brand{ display:flex; align-items:center; gap:10px; }
+  .admin-header .brand img{ width:30px; height:30px; }
+  .admin-header .brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-header nav{ display:flex; gap:16px; flex-wrap:wrap; }
+  .admin-header nav a{ font-size:13px; color:var(--mid); }
+  .admin-header nav a.current{ color:var(--hi); }
+  .admin-main{ padding:40px 0 80px; }
+  .admin-page-title{ font-size:24px; margin-bottom:6px; }
+  .admin-page-sub{ color:var(--mid); font-size:14px; margin-bottom:26px; }
+  .filter-tabs{ display:flex; gap:8px; margin-bottom:22px; }
+  .filter-tab{ background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--mid); padding:7px 16px; border-radius:999px; font-size:12.5px; cursor:pointer; }
+  .filter-tab.active{ background:var(--indigo); color:#fff; border-color:var(--indigo); }
+  .review-card{ padding:18px 20px; margin-bottom:14px; }
+  .review-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
+  .review-stars{ color:#FBBF24; font-size:14px; letter-spacing:2px; }
+  .review-comment{ font-size:13.5px; color:var(--hi); margin-bottom:10px; line-height:1.6; }
+  .review-meta{ font-size:12px; color:var(--mid); margin-bottom:12px; }
+  .review-actions{ display:flex; gap:8px; }
+  .review-actions button{ font-size:12px; padding:6px 14px; border-radius:8px; cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,0.03); color:var(--hi); }
+  .btn-approve{ border-color:rgba(52,211,153,0.4)!important; color:#34D399!important; }
+  .btn-reject{ border-color:rgba(248,113,113,0.4)!important; color:#F87171!important; }
+  .status-badge{ font-size:10px; padding:3px 9px; border-radius:999px; text-transform:uppercase; letter-spacing:0.05em; font-weight:600; }
+  .status-pending{ background:rgba(251,191,36,0.15); color:#FBBF24; }
+  .status-approved{ background:rgba(52,211,153,0.15); color:#34D399; }
+  .status-rejected{ background:rgba(248,113,113,0.15); color:#F87171; }
+  .empty{ color:var(--mid); font-size:13px; }
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="wrap-lg row">
+    <div class="brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO — ADMIN</span>
+    </div>
+    <nav>
+      <a href="dashboard.html">Production</a>
+      <a href="portfolio.html">Portfolio</a>
+      <a href="inquiries.html">Inquiries</a>
+      <a href="reviews.html" class="current">Reviews</a>
+      <a href="leads.html">Shilpi Conversations</a>
+    </nav>
+    <button id="logoutBtn" style="background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px;">Log out</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap-lg">
+    <h1 class="admin-page-title">Moderate reviews</h1>
+    <p class="admin-page-sub">New submissions start pending — approve to publish them on the public Reviews page.</p>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="pending">Pending</button>
+      <button class="filter-tab" data-filter="approved">Approved</button>
+      <button class="filter-tab" data-filter="rejected">Rejected</button>
+      <button class="filter-tab" data-filter="all">All</button>
+    </div>
+
+    <div id="reviewsList"><div class="empty">Loading...</div></div>
+  </div>
+</main>
+
+<script>
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
+    window.location.href = '/admin/login.html';
+  });
+
+  function fmtDate(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  }
+  function stars(n) {
+    return '★★★★★☆☆☆☆☆'.slice(5 - n, 10 - n);
+  }
+
+  let allReviews = [];
+  let currentFilter = 'pending';
+  const listEl = document.getElementById('reviewsList');
+
+  async function loadReviews() {
+    const res = await fetch('/api/admin-reviews');
+    if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
+    const data = await res.json();
+    allReviews = data.reviews || [];
+    render();
+  }
+
+  function render() {
+    const filtered = currentFilter === 'all' ? allReviews : allReviews.filter((r) => r.status === currentFilter);
+    if (!filtered.length) {
+      listEl.innerHTML = `<div class="empty">No ${currentFilter === 'all' ? '' : currentFilter} reviews.</div>`;
+      return;
+    }
+    listEl.innerHTML = '';
+    filtered.forEach((r) => {
+      const card = document.createElement('div');
+      card.className = 'card review-card';
+      card.innerHTML = `
+        <div class="review-top">
+          <div class="review-stars">${stars(r.rating)}</div>
+          <span class="status-badge status-${r.status}">${r.status}</span>
+        </div>
+        <p class="review-comment">"${r.comment}"</p>
+        <div class="review-meta">${r.name}${r.brand ? ', ' + r.brand : ''}${r.service ? ' — ' + r.service : ''} · ${r.email ? r.email + ' · ' : ''}${fmtDate(r.createdAt)}</div>
+        <div class="review-actions">
+          <button class="btn-approve" data-action="approved">Approve</button>
+          <button class="btn-reject" data-action="rejected">Reject</button>
+          <button data-action="delete">Delete</button>
+        </div>
+      `;
+      card.querySelectorAll('button[data-action]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const action = btn.getAttribute('data-action');
+          if (action === 'delete' && !confirm('Delete this review permanently?')) return;
+          await fetch('/api/admin-reviews', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: r.id, action }),
+          });
+          loadReviews();
+        });
+      });
+      listEl.appendChild(card);
+    });
+  }
+
+  document.querySelectorAll('.filter-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.filter-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentFilter = tab.getAttribute('data-filter');
+      render();
+    });
+  });
+
+  loadReviews();
+</script>
+</body>
+</html>
