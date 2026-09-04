@@ -1,4 +1,5 @@
 import { put, get } from "@vercel/blob";
+import { handleUpload } from "@vercel/blob/client";
 import { COOKIE_NAME, verifySessionToken, parseCookie } from "../lib/session.js";
 
 // Combines admin-submit-job.js + admin-job-status.js + admin-job-file.js
@@ -6,17 +7,104 @@ import { COOKIE_NAME, verifySessionToken, parseCookie } from "../lib/session.js"
 // Node.js runtime (@vercel/blob needs Node builtins) with classic
 // (req, res) handler — matches this project's convention.
 
-function base64ToBytes(base64) {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+const JOB_ID_RE = /^job_[a-z0-9]+$/i;
+
+function makeJobId() {
+  return `job_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// Any file that might exceed ~4MB (stitch clips at 5-10MB+ each, and even
+// a merely-large reference photo) blows past Vercel's ~4.5MB serverless
+// request body cap if sent through this function as base64-in-JSON — so
+// those upload directly browser-to-Blob instead. This route only issues
+// short-lived client tokens (handleUploadUrl target for
+// @vercel/blob/client's upload()); the actual file bytes never pass
+// through this function.
+async function handleBlobUploadToken(req, res) {
+  try {
+    const jsonResponse = await handleUpload({
+      body: req.body,
+      request: req,
+      onBeforeGenerateToken: async (pathname) => {
+        // Client picks the pathname; constrain it to jobs/<jobId>/(stitch_*
+        // or face.*) so an admin session can only write into a job folder
+        // it named, not arbitrary paths in the shared Blob store.
+        const isStitchClip = /^jobs\/job_[a-z0-9]+\/stitch_clip_\d+\.[a-z0-9]+$/i.test(pathname);
+        const isFacePhoto = /^jobs\/job_[a-z0-9]+\/face\.[a-z0-9]+$/i.test(pathname);
+        if (!isStitchClip && !isFacePhoto) {
+          throw new Error("Invalid upload pathname");
+        }
+        return {
+          allowedContentTypes: isFacePhoto
+            ? ["image/png", "image/jpeg", "image/webp"]
+            : ["video/mp4", "video/quicktime", "video/webm", "video/x-m4v"],
+          maximumSizeInBytes: isFacePhoto ? 25 * 1024 * 1024 : 300 * 1024 * 1024,
+          addRandomSuffix: false,
+          allowOverwrite: true,
+        };
+      },
+    });
+    res.status(200).json(jsonResponse);
+  } catch (err) {
+    res.status(400).json({ error: err.message || "Upload token request failed" });
+  }
+}
+
+async function handleStitchSubmit(req, res) {
+  const body = req.body || {};
+  const { id, clientName, stitchClips, voice } = body;
+  const errors = [];
+  if (!id || !JOB_ID_RE.test(id)) errors.push("id is required and must look like a job id (from the upload step)");
+  if (!clientName || typeof clientName !== "string") errors.push("clientName is required");
+  if (!Array.isArray(stitchClips) || stitchClips.length === 0) errors.push("stitchClips must be a non-empty array");
+  else {
+    stitchClips.forEach((clip, i) => {
+      if (!clip || typeof clip.pathname !== "string" || !clip.pathname.startsWith(`jobs/${id}/`)) {
+        errors.push(`stitchClips[${i}].pathname is missing or doesn't belong to this job`);
+      }
+      if (!clip || typeof clip.narration !== "string" || !clip.narration.trim()) {
+        errors.push(`stitchClips[${i}].narration is required (every clip needs a line of narration)`);
+      }
+    });
+  }
+  if (errors.length) {
+    res.status(422).json({ error: "Validation failed", details: errors });
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const job = {
+    id,
+    status: "queued",
+    clientName,
+    contentType: "stitch",
+    stitchClips: stitchClips.map((c) => ({ pathname: c.pathname, narration: c.narration.trim() })),
+    voice: typeof voice === "string" && voice ? voice : null,
+    createdAt: now,
+    updatedAt: now,
+    resultVideoPathname: null,
+    resultSrtPathname: null,
+    resultImagesZipPathname: null,
+    error: null,
+  };
+
+  await put(`jobs/${id}.json`, JSON.stringify(job, null, 2), {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json",
+  });
+
+  res.status(200).json({ ok: true, job });
 }
 
 async function handleSubmit(req, res) {
   const body = req.body || {};
-  const { clientName, prompt, contentType, aspectRatio, sceneCount, masterFaceDataUrl } = body;
+  if (body.contentType === "stitch") return handleStitchSubmit(req, res);
+
+  const { id: clientId, clientName, prompt, contentType, aspectRatio, sceneCount, masterFacePathname: uploadedFacePathname } = body;
   const errors = [];
+  if (clientId && !JOB_ID_RE.test(clientId)) errors.push("id, if provided, must look like a job id");
   if (!clientName || typeof clientName !== "string") errors.push("clientName is required");
   if (!prompt || typeof prompt !== "string") errors.push("prompt is required");
   const resolvedContentType = contentType || "video";
@@ -27,35 +115,21 @@ async function handleSubmit(req, res) {
   if (!allowedAspectRatios.includes(aspectRatio)) errors.push(`aspectRatio must be one of ${allowedAspectRatios.join(", ")}`);
   const scenes = Number(sceneCount);
   if (!Number.isInteger(scenes) || scenes < 1 || scenes > 10) errors.push("sceneCount must be an integer 1-10");
+  // masterFacePathname is uploaded client-side (direct-to-Blob, see the
+  // blob-token route) BEFORE this call, using the same id — so it must
+  // already live under this job's own folder, same guard as stitchClips.
+  const id = clientId || makeJobId();
+  if (uploadedFacePathname !== undefined && uploadedFacePathname !== null) {
+    if (typeof uploadedFacePathname !== "string" || !uploadedFacePathname.startsWith(`jobs/${id}/`)) {
+      errors.push("masterFacePathname doesn't belong to this job");
+    }
+  }
   if (errors.length) {
     res.status(422).json({ error: "Validation failed", details: errors });
     return;
   }
 
-  const id = `job_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-  let masterFacePathname = null;
-
-  if (typeof masterFaceDataUrl === "string" && masterFaceDataUrl.startsWith("data:")) {
-    const match = masterFaceDataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) {
-      res.status(422).json({ error: "masterFaceDataUrl is not a valid data URL" });
-      return;
-    }
-    const [, mime, b64] = match;
-    const ext = mime.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
-    const bytes = base64ToBytes(b64);
-    if (bytes.length > 8 * 1024 * 1024) {
-      res.status(413).json({ error: "Reference photo too large (max 8MB)" });
-      return;
-    }
-    const uploaded = await put(`jobs/${id}/face.${ext}`, bytes, {
-      access: "private",
-      addRandomSuffix: false,
-      contentType: mime,
-    });
-    masterFacePathname = uploaded.pathname;
-  }
-
+  const masterFacePathname = uploadedFacePathname || null;
   const now = new Date().toISOString();
   const job = {
     id,
@@ -124,7 +198,10 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method === "POST") return handleSubmit(req, res);
+  if (req.method === "POST") {
+    if (req.query.action === "blob-token") return handleBlobUploadToken(req, res);
+    return handleSubmit(req, res);
+  }
 
   if (req.method === "GET") {
     const id = req.query.id;

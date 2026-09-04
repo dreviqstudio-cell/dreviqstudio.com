@@ -36,6 +36,12 @@
   .result-pre{ margin-top:16px; padding:14px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid var(--border); font-size:12px; color:var(--mid); overflow-x:auto; white-space:pre-wrap; display:none; }
   .logout-btn{ background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px; }
   .logout-btn:hover{ color:var(--hi); border-color:var(--border-hi); }
+  .clip-row{ border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:12px; }
+  .clip-row-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .clip-row-head span{ font-size:12px; color:var(--mid); font-family:var(--disp); letter-spacing:0.08em; }
+  .clip-row-remove{ background:none; border:none; color:var(--mid); font-size:12px; cursor:pointer; padding:2px 6px; }
+  .clip-row-remove:hover{ color:#F87171; }
+  .clip-row textarea{ min-height:56px; }
 </style>
 </head>
 <body>
@@ -78,19 +84,20 @@
       </div>
 
       <div class="field">
-        <label for="prompt">Creative brief</label>
-        <textarea id="prompt" name="prompt" required placeholder="e.g. 30s energetic ad for a protein bar, gym setting, confident tone"></textarea>
-      </div>
-
-      <div class="field">
         <label for="contentType">Content type</label>
         <select id="contentType" name="contentType">
           <option value="video">Video (UGC avatar / Social Reel — pick 9:16 below for Reels &amp; Shorts)</option>
           <option value="photo">Photo set (AI Lifestyle &amp; Product Photography — no video step)</option>
+          <option value="stitch">Stitch uploaded clips (no AI generation — narrate + sync + caption clips you already have)</option>
         </select>
       </div>
 
-      <div class="field-row">
+      <div class="field" id="promptField">
+        <label for="prompt">Creative brief</label>
+        <textarea id="prompt" name="prompt" required placeholder="e.g. 30s energetic ad for a protein bar, gym setting, confident tone"></textarea>
+      </div>
+
+      <div class="field-row" id="genFieldsRow">
         <div class="field">
           <label for="aspectRatio">Aspect ratio</label>
           <select id="aspectRatio" name="aspectRatio">
@@ -105,9 +112,21 @@
         </div>
       </div>
 
-      <div class="field">
+      <div class="field" id="masterFaceField">
         <label for="masterFace">Reference face photo</label>
         <input type="file" id="masterFace" name="masterFace" accept="image/*" />
+      </div>
+
+      <div id="stitchFields" style="display:none;">
+        <div class="field">
+          <label>Clips to stitch</label>
+          <div id="clipRows"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="addClipBtn">+ Add another clip</button>
+        </div>
+        <div class="field">
+          <label for="voice">Narrator voice (optional)</label>
+          <input type="text" id="voice" name="voice" placeholder="e.g. en-IN-NeerjaNeural — leave blank for default" />
+        </div>
       </div>
 
       <button type="submit" class="btn btn-primary" id="submitBtn">Submit brief</button>
@@ -125,7 +144,9 @@
   </div>
 </main>
 
-<script>
+<script type="module">
+  import { upload } from 'https://esm.sh/@vercel/blob@2.8.0/client';
+
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/admin-auth?action=logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
@@ -139,15 +160,137 @@
   const aspectRatioSelect = document.getElementById('aspectRatio');
   const squareOption = document.getElementById('squareOption');
   const sceneCountLabel = document.getElementById('sceneCountLabel');
+  const promptField = document.getElementById('promptField');
+  const promptInput = document.getElementById('prompt');
+  const genFieldsRow = document.getElementById('genFieldsRow');
+  const masterFaceField = document.getElementById('masterFaceField');
+  const stitchFields = document.getElementById('stitchFields');
+  const clipRows = document.getElementById('clipRows');
+  const addClipBtn = document.getElementById('addClipBtn');
 
   function syncFieldsToContentType() {
-    const isPhoto = contentTypeSelect.value === 'photo';
+    const type = contentTypeSelect.value;
+    const isPhoto = type === 'photo';
+    const isStitch = type === 'stitch';
     squareOption.disabled = !isPhoto;
     if (!isPhoto && aspectRatioSelect.value === '1:1') aspectRatioSelect.value = '16:9';
     sceneCountLabel.textContent = isPhoto ? 'Image count' : 'Scene count';
+
+    promptField.style.display = isStitch ? 'none' : '';
+    promptInput.required = !isStitch;
+    genFieldsRow.style.display = isStitch ? 'none' : '';
+    masterFaceField.style.display = isStitch ? 'none' : '';
+    stitchFields.style.display = isStitch ? '' : 'none';
+    if (isStitch && clipRows.children.length === 0) addClipRow();
   }
   contentTypeSelect.addEventListener('change', syncFieldsToContentType);
   syncFieldsToContentType();
+
+  let clipRowSeq = 0;
+  function addClipRow() {
+    clipRowSeq += 1;
+    const n = clipRowSeq;
+    const row = document.createElement('div');
+    row.className = 'clip-row';
+    row.dataset.rowId = String(n);
+    row.innerHTML = `
+      <div class="clip-row-head">
+        <span>CLIP ${n}</span>
+        <button type="button" class="clip-row-remove" data-remove>Remove</button>
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <input type="file" accept="video/*" data-clip-file />
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <textarea placeholder="Narration line for this clip (required — becomes the voiceover + caption)" data-clip-narration></textarea>
+      </div>
+    `;
+    row.querySelector('[data-remove]').addEventListener('click', () => row.remove());
+    clipRows.appendChild(row);
+  }
+  addClipBtn.addEventListener('click', addClipRow);
+
+  function makeJobId() {
+    return `job_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  // Clips (5-10MB+ each, several per job) go straight browser-to-Blob —
+  // Vercel serverless functions cap request bodies around ~4.5MB, so
+  // routing them through /api/admin-production like the face-photo upload
+  // does isn't an option here. See api/admin-production.js's blob-token route.
+  async function submitStitchJob() {
+    const rows = Array.from(clipRows.querySelectorAll('.clip-row'));
+    const entries = rows.map((row) => ({
+      file: row.querySelector('[data-clip-file]').files[0],
+      narration: row.querySelector('[data-clip-narration]').value.trim(),
+    }));
+    if (entries.length === 0) throw new Error('Add at least one clip.');
+    entries.forEach((entry, i) => {
+      if (!entry.file) throw new Error(`Clip ${i + 1}: choose a video file.`);
+      if (!entry.narration) throw new Error(`Clip ${i + 1}: narration text is required.`);
+    });
+
+    const id = makeJobId();
+    const stitchClips = [];
+    for (let i = 0; i < entries.length; i++) {
+      submitBtn.textContent = `Uploading clip ${i + 1}/${entries.length}…`;
+      const { file, narration } = entries[i];
+      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+      const pathname = `jobs/${id}/stitch_clip_${String(i + 1).padStart(2, '0')}.${ext}`;
+      const blob = await upload(pathname, file, {
+        access: 'private',
+        handleUploadUrl: '/api/admin-production?action=blob-token',
+        multipart: true,
+      });
+      stitchClips.push({ pathname: blob.pathname, narration });
+    }
+
+    submitBtn.textContent = 'Finalizing…';
+    return fetch('/api/admin-production', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contentType: 'stitch',
+        id,
+        clientName: document.getElementById('clientName').value,
+        stitchClips,
+        voice: document.getElementById('voice').value || null,
+      }),
+    });
+  }
+
+  async function submitGenerationJob() {
+    const id = makeJobId();
+    const payload = {
+      id,
+      clientName: document.getElementById('clientName').value,
+      prompt: document.getElementById('prompt').value,
+      contentType: contentTypeSelect.value,
+      aspectRatio: aspectRatioSelect.value,
+      sceneCount: Number(document.getElementById('sceneCount').value),
+    };
+
+    // Direct-to-Blob, same as clips — a base64-in-JSON reference photo can
+    // exceed Vercel's ~4.5MB serverless request body cap on its own.
+    const faceFile = document.getElementById('masterFace').files[0];
+    if (faceFile) {
+      submitBtn.textContent = 'Uploading reference photo…';
+      const ext = (faceFile.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+      const blob = await upload(`jobs/${id}/face.${ext}`, faceFile, {
+        access: 'private',
+        handleUploadUrl: '/api/admin-production?action=blob-token',
+        multipart: true,
+      });
+      payload.masterFacePathname = blob.pathname;
+    }
+
+    submitBtn.textContent = 'Submitting…';
+    return fetch('/api/admin-production', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -156,30 +299,8 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting…';
 
-    const payload = {
-      clientName: document.getElementById('clientName').value,
-      prompt: document.getElementById('prompt').value,
-      contentType: contentTypeSelect.value,
-      aspectRatio: aspectRatioSelect.value,
-      sceneCount: Number(document.getElementById('sceneCount').value),
-    };
-
-    const faceFile = document.getElementById('masterFace').files[0];
-    if (faceFile) {
-      payload.masterFaceDataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(faceFile);
-      });
-    }
-
     try {
-      const res = await fetch('/api/admin-production', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const res = contentTypeSelect.value === 'stitch' ? await submitStitchJob() : await submitGenerationJob();
       const data = await res.json();
       if (res.status === 401) {
         window.location.href = '/admin/login.html';
@@ -191,8 +312,8 @@
       } else {
         pollJob(data.job.id);
       }
-    } catch {
-      errorBanner.textContent = 'Network error — try again.';
+    } catch (err) {
+      errorBanner.textContent = err.message || 'Network error — try again.';
       errorBanner.classList.add('show');
     } finally {
       submitBtn.disabled = false;
