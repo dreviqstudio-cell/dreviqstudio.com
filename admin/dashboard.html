@@ -145,7 +145,29 @@
 </main>
 
 <script type="module">
-  import { upload } from 'https://esm.sh/@vercel/blob@2.8.0/client';
+  // Direct-to-B2 upload: ask /api/admin-production?action=blob-token for a
+  // short-lived presigned PUT URL scoped to this exact pathname, then PUT
+  // the file straight to Backblaze — the bytes never pass through our own
+  // function, same reason this went straight to Blob before.
+  async function uploadDirect(pathname, file) {
+    const tokenRes = await fetch('/api/admin-production?action=blob-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pathname, contentType: file.type || 'application/octet-stream' }),
+    });
+    if (!tokenRes.ok) {
+      const err = await tokenRes.json().catch(() => ({}));
+      throw new Error(err.error || `Upload authorization failed (${tokenRes.status})`);
+    }
+    const { url } = await tokenRes.json();
+    const putRes = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    if (!putRes.ok) throw new Error(`Upload failed (${putRes.status})`);
+    return { pathname };
+  }
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/admin-auth?action=logout', { method: 'POST' });
@@ -214,10 +236,10 @@
     return `job_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  // Clips (5-10MB+ each, several per job) go straight browser-to-Blob —
-  // Vercel serverless functions cap request bodies around ~4.5MB, so
-  // routing them through /api/admin-production like the face-photo upload
-  // does isn't an option here. See api/admin-production.js's blob-token route.
+  // Clips (5-10MB+ each, several per job) go straight browser-to-B2 — a
+  // serverless function's request body cap makes routing them through
+  // /api/admin-production like a normal field isn't an option here. See
+  // api/admin-production.js's blob-token action.
   async function submitStitchJob() {
     const rows = Array.from(clipRows.querySelectorAll('.clip-row'));
     const entries = rows.map((row) => ({
@@ -237,12 +259,8 @@
       const { file, narration } = entries[i];
       const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
       const pathname = `jobs/${id}/stitch_clip_${String(i + 1).padStart(2, '0')}.${ext}`;
-      const blob = await upload(pathname, file, {
-        access: 'private',
-        handleUploadUrl: '/api/admin-production?action=blob-token',
-        multipart: true,
-      });
-      stitchClips.push({ pathname: blob.pathname, narration });
+      const { pathname: uploadedPathname } = await uploadDirect(pathname, file);
+      stitchClips.push({ pathname: uploadedPathname, narration });
     }
 
     submitBtn.textContent = 'Finalizing…';
@@ -270,18 +288,14 @@
       sceneCount: Number(document.getElementById('sceneCount').value),
     };
 
-    // Direct-to-Blob, same as clips — a base64-in-JSON reference photo can
-    // exceed Vercel's ~4.5MB serverless request body cap on its own.
+    // Direct-to-B2, same as clips — a base64-in-JSON reference photo can
+    // exceed a serverless function's request body cap on its own.
     const faceFile = document.getElementById('masterFace').files[0];
     if (faceFile) {
       submitBtn.textContent = 'Uploading reference photo…';
       const ext = (faceFile.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-      const blob = await upload(`jobs/${id}/face.${ext}`, faceFile, {
-        access: 'private',
-        handleUploadUrl: '/api/admin-production?action=blob-token',
-        multipart: true,
-      });
-      payload.masterFacePathname = blob.pathname;
+      const { pathname } = await uploadDirect(`jobs/${id}/face.${ext}`, faceFile);
+      payload.masterFacePathname = pathname;
     }
 
     submitBtn.textContent = 'Submitting…';

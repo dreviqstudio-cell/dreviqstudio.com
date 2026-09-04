@@ -1,0 +1,7 @@
+name = "dreviqstudio-com"
+compatibility_date = "2026-09-04"
+pages_build_output_dir = "."
+
+# Real values live in Cloudflare Pages project settings → Environment
+# variables (production + preview), and locally in .dev.vars (gitignored,
+# see .dev.vars.example) for `wrangler pages dev`. Nothing secret goes here.

@@ -135,26 +135,6 @@
 </main>
 
 <script type="module">
-  // Loaded lazily (not as a static top-level import) so that if this CDN
-  // is blocked by a network policy or browser extension, the rest of the
-  // page (login, viewing/deleting existing items) still works — only the
-  // upload button fails, with a clear message pointing at the real cause.
-  let uploadFnPromise = null;
-  function getUploadFn() {
-    if (!uploadFnPromise) {
-      uploadFnPromise = import('https://esm.sh/@vercel/blob@2.8.0/client')
-        .then((mod) => mod.upload)
-        .catch((err) => {
-          uploadFnPromise = null; // allow retry on next submit
-          throw new Error(
-            `Could not load the upload library from esm.sh (${err.message || err}). ` +
-            `If you're on a network with an ad-blocker or content filter, try disabling it for this site, or a different network.`
-          );
-        });
-    }
-    return uploadFnPromise;
-  }
-
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await fetch('/api/admin-auth?action=logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
@@ -190,16 +170,35 @@
     }
   }
 
+  // Direct-to-B2 upload: ask /api/admin-portfolio?action=token for a
+  // short-lived presigned PUT URL scoped to this exact pathname, then PUT
+  // the file straight to Backblaze (via XHR, not fetch, so we can still
+  // report upload progress) — the bytes never pass through our own function.
   async function uploadDirect(step, pathname, file, onProgress) {
     try {
-      const upload = await getUploadFn();
-      const blob = await upload(pathname, file, {
-        access: 'private',
-        handleUploadUrl: '/api/admin-portfolio?action=token',
-        multipart: true,
-        onUploadProgress: onProgress,
+      const tokenRes = await fetch('/api/admin-portfolio?action=token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathname, contentType: file.type || 'application/octet-stream' }),
       });
-      return blob.pathname;
+      const tokenData = await safeJson(tokenRes);
+      if (!tokenRes.ok) throw new Error(tokenData.error || `Upload authorization failed (${tokenRes.status})`);
+
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', tokenData.url);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        if (onProgress) {
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) onProgress({ percentage: (e.loaded / e.total) * 100 });
+          });
+        }
+        xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed (${xhr.status})`)));
+        xhr.onerror = () => reject(new Error('Upload failed (network error)'));
+        xhr.send(file);
+      });
+
+      return tokenData.pathname;
     } catch (err) {
       throw new Error(`[${step}] ${err.message || err}`);
     }

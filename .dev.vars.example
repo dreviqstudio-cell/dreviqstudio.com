@@ -1,0 +1,13 @@
+# Copy to .dev.vars (gitignored) for local `wrangler pages dev` testing.
+# Set the real values in the Cloudflare Pages dashboard for production/preview.
+
+ADMIN_PASSWORD=
+ADMIN_SESSION_SECRET=
+ANTHROPIC_API_KEY=
+SHILPI_MODEL=claude-sonnet-5
+
+B2_KEY_ID=
+B2_APPLICATION_KEY=
+B2_BUCKET=dreviq-jobs
+B2_ENDPOINT=https://s3.us-west-004.backblazeb2.com
+B2_REGION=us-west-004
