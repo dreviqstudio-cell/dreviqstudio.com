@@ -70,15 +70,15 @@
     // if the fetch fails) — real admin-uploaded items replace it once
     // loaded, most recent first.
     (function () {
-      fetch('/api/portfolio-items')
+      fetch('/api/portfolio-public')
         .then((r) => r.json())
         .then((data) => {
           if (!data.items || !data.items.length) return; // keep the static fallback
           const grid = document.getElementById('portfolioGrid');
           grid.innerHTML = '';
           data.items.forEach((item) => {
-            const mediaUrl = '/api/portfolio-media?path=' + encodeURIComponent(item.mediaPathname);
-            const posterUrl = item.posterPathname ? '/api/portfolio-media?path=' + encodeURIComponent(item.posterPathname) : '';
+            const mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
+            const posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
             const mediaHtml = item.mediaType === 'video'
               ? `<video class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" controls muted loop playsinline poster="${posterUrl}"><source src="${mediaUrl}" type="video/mp4"></video>`
               : `<img class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" src="${mediaUrl}" alt="${item.title}">`;

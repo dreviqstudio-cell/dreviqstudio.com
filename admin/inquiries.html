@@ -68,7 +68,7 @@
 
 <script>
   document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await fetch('/api/admin-logout', { method: 'POST' });
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
     window.location.href = '/admin/login.html';
   });
 
@@ -79,7 +79,7 @@
   const listEl = document.getElementById('inquiriesList');
 
   async function loadInquiries() {
-    const res = await fetch('/api/admin-list-inquiries');
+    const res = await fetch('/api/admin-inquiries');
     if (res.status === 401) { window.location.href = '/admin/login.html'; return; }
     let data;
     try { data = JSON.parse(await res.text()); } catch { listEl.innerHTML = '<div class="empty">Failed to load.</div>'; return; }
@@ -116,7 +116,7 @@
         </div>
       `;
       card.querySelector('.status-select').addEventListener('change', async (e) => {
-        await fetch('/api/admin-update-inquiry', {
+        await fetch('/api/admin-inquiries', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: inq.id, status: e.target.value }),

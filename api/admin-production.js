@@ -1,14 +1,10 @@
-import { put } from "@vercel/blob";
+import { put, get } from "@vercel/blob";
 import { COOKIE_NAME, verifySessionToken, parseCookie } from "../lib/session.js";
 
-// Node.js runtime (default for this file) — NOT edge. @vercel/blob depends
-// on `undici`, which needs Node builtins (node:stream, node:net, node:tls,
-// ...) unavailable in the Edge sandbox; deploying this as an edge function
-// fails at build time with "referencing unsupported modules". Node's
-// classic (req, res) handler signature is used here deliberately — this
-// Vercel setup's Node runtime does NOT dispatch api/*.js with the Fetch
-// Request/Response signature used in login/logout (those stay on edge,
-// which doesn't need @vercel/blob).
+// Combines admin-submit-job.js + admin-job-status.js + admin-job-file.js
+// — see api/admin-auth.js for why (12-function Hobby plan cap).
+// Node.js runtime (@vercel/blob needs Node builtins) with classic
+// (req, res) handler — matches this project's convention.
 
 function base64ToBytes(base64) {
   const binary = atob(base64);
@@ -17,27 +13,7 @@ function base64ToBytes(base64) {
   return bytes;
 }
 
-/**
- * Creates a real job record in Vercel Blob (jobs/<id>.json, status "queued").
- * A separate always-on worker (Render background worker, see
- * dreviq_agent/worker.py) polls Blob for queued jobs, runs the actual
- * content-engine pipeline, and writes the result back. This endpoint does
- * NOT run the pipeline itself — Vercel functions can't run a multi-minute
- * Python/Whisper/ffmpeg process.
- */
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
-  }
-
-  const secret = process.env.ADMIN_SESSION_SECRET;
-  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
-  if (!secret || !(await verifySessionToken(token, secret))) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
+async function handleSubmit(req, res) {
   const body = req.body || {};
   const { clientName, prompt, aspectRatio, sceneCount, masterFaceDataUrl } = body;
   const errors = [];
@@ -46,7 +22,6 @@ export default async function handler(req, res) {
   if (!["16:9", "9:16"].includes(aspectRatio)) errors.push("aspectRatio must be 16:9 or 9:16");
   const scenes = Number(sceneCount);
   if (!Number.isInteger(scenes) || scenes < 1 || scenes > 10) errors.push("sceneCount must be an integer 1-10");
-
   if (errors.length) {
     res.status(422).json({ error: "Validation failed", details: errors });
     return;
@@ -100,4 +75,58 @@ export default async function handler(req, res) {
   });
 
   res.status(200).json({ ok: true, job });
+}
+
+async function handleStatus(req, res, id) {
+  if (!/^job_[a-z0-9]+$/i.test(id)) {
+    res.status(400).json({ error: "Invalid job id" });
+    return;
+  }
+  const result = await get(`jobs/${id}.json`, { access: "private", useCache: false });
+  if (!result || result.statusCode !== 200) {
+    res.status(404).json({ error: "Job not found" });
+    return;
+  }
+  const chunks = [];
+  for await (const chunk of result.stream) chunks.push(chunk);
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).send(Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf-8"));
+}
+
+async function handleFile(req, res, path) {
+  if (!/^jobs\/[a-zA-Z0-9_.\/-]+$/.test(path) || path.includes("..")) {
+    res.status(400).json({ error: "Invalid path" });
+    return;
+  }
+  const result = await get(path, { access: "private" });
+  if (!result || result.statusCode !== 200) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const chunks = [];
+  for await (const chunk of result.stream) chunks.push(chunk);
+  res.setHeader("Content-Type", result.blob.contentType || "application/octet-stream");
+  res.status(200).send(Buffer.concat(chunks.map((c) => Buffer.from(c))));
+}
+
+export default async function handler(req, res) {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+  if (!secret || !(await verifySessionToken(token, secret))) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  if (req.method === "POST") return handleSubmit(req, res);
+
+  if (req.method === "GET") {
+    const id = req.query.id;
+    const path = req.query.path;
+    if (id && !Array.isArray(id)) return handleStatus(req, res, id);
+    if (path && !Array.isArray(path)) return handleFile(req, res, path);
+    res.status(400).json({ error: "Provide ?id= or ?path=" });
+    return;
+  }
+
+  res.status(405).json({ error: "Method not allowed" });
 }

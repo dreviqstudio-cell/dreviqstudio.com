@@ -93,15 +93,15 @@
   <script>
     (function () {
       var slider = document.getElementById('worksSlider');
-      fetch('/api/portfolio-items').then(function(r){ return r.json(); }).then(function(data){
+      fetch('/api/portfolio-public').then(function(r){ return r.json(); }).then(function(data){
         var items = data.items || [];
         if (!items.length) {
           slider.innerHTML = '<div class="works-empty">Portfolio launching soon — check back shortly, or explore our <a href="services.html">service breakdown</a> in the meantime.</div>';
           return;
         }
         slider.innerHTML = items.map(function(item){
-          var mediaUrl = '/api/portfolio-media?path=' + encodeURIComponent(item.mediaPathname);
-          var posterUrl = item.posterPathname ? '/api/portfolio-media?path=' + encodeURIComponent(item.posterPathname) : '';
+          var mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
+          var posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
           var mediaHtml = item.mediaType === 'video'
             ? '<video src="' + mediaUrl + '" poster="' + posterUrl + '" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>'
             : '<img src="' + mediaUrl + '" alt="' + item.title + '" loading="lazy">';
