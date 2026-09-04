@@ -10,6 +10,13 @@
 (function () {
   "use strict";
 
+  // Update this one line to swap in a dedicated business number later —
+  // nothing else needs to change. Deliberately never printed as visible
+  // text anywhere; only embedded in the wa.me link's destination (visitors
+  // see it only once they actually open WhatsApp, same as any "Message
+  // us" button on any site).
+  const WHATSAPP_NUMBER = "917855012176";
+
   const STYLE = `
     #shilpi-launcher {
       position: fixed; bottom: 22px; right: 22px; z-index: 9999;
@@ -58,6 +65,11 @@
       font-weight: 600; font-size: 13px; cursor: pointer;
     }
     #shilpi-send:disabled { opacity: 0.5; cursor: default; }
+    #shilpi-whatsapp {
+      display: block; text-align: center; font-size: 11.5px; color: #34D399;
+      padding: 7px 12px; text-decoration: none; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    #shilpi-whatsapp:hover { text-decoration: underline; }
   `;
 
   function uid() {
@@ -102,6 +114,7 @@
         <button id="shilpi-close" aria-label="Close chat">✕</button>
       </div>
       <div id="shilpi-messages"></div>
+      <a id="shilpi-whatsapp" target="_blank" rel="noopener">💬 Prefer WhatsApp? Continue there instead</a>
       <div id="shilpi-inputrow">
         <textarea id="shilpi-input" rows="1" placeholder="Ask about services, pricing, anything..."></textarea>
         <button id="shilpi-send">Send</button>
@@ -114,6 +127,12 @@
     const sendBtn = panel.querySelector("#shilpi-send");
     const closeBtn = panel.querySelector("#shilpi-close");
     const voiceBtn = panel.querySelector("#shilpi-voice-toggle");
+    const whatsappLink = panel.querySelector("#shilpi-whatsapp");
+    whatsappLink.href =
+      "https://wa.me/" +
+      WHATSAPP_NUMBER +
+      "?text=" +
+      encodeURIComponent("Hi, I was chatting with Shilpi on dreviqstudio.com and wanted to continue here.");
 
     let voiceOn = false;
     let opened = false;
