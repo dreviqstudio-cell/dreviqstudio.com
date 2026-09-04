@@ -83,6 +83,38 @@
       </div>
     </div>
   </div>
+  <script>
+    // Decorative placeholder boxes above are the default. If an admin has
+    // uploaded a portfolio item marked "Feature on homepage" with a
+    // raw/before image, swap in the real before/after pair instead.
+    (function () {
+      fetch('/api/portfolio-items')
+        .then((r) => r.json())
+        .then((data) => {
+          const featured = (data.items || []).find((i) => i.featuredHome && i.rawPathname);
+          if (!featured) return;
+          const rawUrl = '/api/portfolio-media?path=' + encodeURIComponent(featured.rawPathname);
+          const mainUrl = '/api/portfolio-media?path=' + encodeURIComponent(featured.mediaPathname);
+          const rawEl = document.querySelector('.reveal-raw');
+          const renderEl = document.querySelector('.reveal-render');
+          if (rawEl) {
+            rawEl.style.backgroundImage = `url('${rawUrl}')`;
+            rawEl.style.backgroundSize = 'cover';
+            rawEl.style.backgroundPosition = 'center';
+            const box = rawEl.querySelector('.raw-box');
+            if (box) box.style.display = 'none';
+          }
+          if (renderEl) {
+            renderEl.style.backgroundImage = `url('${mainUrl}')`;
+            renderEl.style.backgroundSize = 'cover';
+            renderEl.style.backgroundPosition = 'center';
+            const box = renderEl.querySelector('.render-box');
+            if (box) box.style.display = 'none';
+          }
+        })
+        .catch(() => { /* keep the decorative placeholder on any error */ });
+    })();
+  </script>
 </section>
 
 <section class="section-alt">
