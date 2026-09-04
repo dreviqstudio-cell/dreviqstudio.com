@@ -81,16 +81,25 @@
         <textarea id="prompt" name="prompt" required placeholder="e.g. 30s energetic ad for a protein bar, gym setting, confident tone"></textarea>
       </div>
 
+      <div class="field">
+        <label for="contentType">Content type</label>
+        <select id="contentType" name="contentType">
+          <option value="video">Video (UGC avatar / Social Reel — pick 9:16 below for Reels &amp; Shorts)</option>
+          <option value="photo">Photo set (AI Lifestyle &amp; Product Photography — no video step)</option>
+        </select>
+      </div>
+
       <div class="field-row">
         <div class="field">
           <label for="aspectRatio">Aspect ratio</label>
           <select id="aspectRatio" name="aspectRatio">
             <option value="16:9">16:9 (landscape)</option>
-            <option value="9:16">9:16 (vertical)</option>
+            <option value="9:16">9:16 (vertical / Reels &amp; Shorts)</option>
+            <option value="1:1" id="squareOption" disabled>1:1 (square — photo only)</option>
           </select>
         </div>
         <div class="field">
-          <label for="sceneCount">Scene count</label>
+          <label for="sceneCount"><span id="sceneCountLabel">Scene count</span></label>
           <input type="number" id="sceneCount" name="sceneCount" min="1" max="10" value="4" />
         </div>
       </div>
@@ -125,6 +134,19 @@
   const errorBanner = document.getElementById('errorBanner');
   const resultPre = document.getElementById('resultPre');
   const submitBtn = document.getElementById('submitBtn');
+  const contentTypeSelect = document.getElementById('contentType');
+  const aspectRatioSelect = document.getElementById('aspectRatio');
+  const squareOption = document.getElementById('squareOption');
+  const sceneCountLabel = document.getElementById('sceneCountLabel');
+
+  function syncFieldsToContentType() {
+    const isPhoto = contentTypeSelect.value === 'photo';
+    squareOption.disabled = !isPhoto;
+    if (!isPhoto && aspectRatioSelect.value === '1:1') aspectRatioSelect.value = '16:9';
+    sceneCountLabel.textContent = isPhoto ? 'Image count' : 'Scene count';
+  }
+  contentTypeSelect.addEventListener('change', syncFieldsToContentType);
+  syncFieldsToContentType();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -136,7 +158,8 @@
     const payload = {
       clientName: document.getElementById('clientName').value,
       prompt: document.getElementById('prompt').value,
-      aspectRatio: document.getElementById('aspectRatio').value,
+      contentType: contentTypeSelect.value,
+      aspectRatio: aspectRatioSelect.value,
       sceneCount: Number(document.getElementById('sceneCount').value),
     };
 
@@ -199,7 +222,10 @@
       const srtLink = job.resultSrtPathname
         ? `<a href="/api/admin-production?path=${encodeURIComponent(job.resultSrtPathname)}" class="btn btn-sm btn-ghost" download style="margin-left:8px;">Download subtitles</a>`
         : '';
-      jobStatusBody.innerHTML = videoLink + srtLink;
+      const imagesLink = job.resultImagesZipPathname
+        ? `<a href="/api/admin-production?path=${encodeURIComponent(job.resultImagesZipPathname)}" class="btn btn-sm btn-primary" download>Download images (.zip)</a>`
+        : '';
+      jobStatusBody.innerHTML = videoLink + srtLink + imagesLink;
     } else if (job.status === 'failed') {
       jobStatusBody.textContent = job.error || 'Unknown error.';
     } else {

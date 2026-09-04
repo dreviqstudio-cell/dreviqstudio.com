@@ -15,11 +15,16 @@ function base64ToBytes(base64) {
 
 async function handleSubmit(req, res) {
   const body = req.body || {};
-  const { clientName, prompt, aspectRatio, sceneCount, masterFaceDataUrl } = body;
+  const { clientName, prompt, contentType, aspectRatio, sceneCount, masterFaceDataUrl } = body;
   const errors = [];
   if (!clientName || typeof clientName !== "string") errors.push("clientName is required");
   if (!prompt || typeof prompt !== "string") errors.push("prompt is required");
-  if (!["16:9", "9:16"].includes(aspectRatio)) errors.push("aspectRatio must be 16:9 or 9:16");
+  const resolvedContentType = contentType || "video";
+  if (!["video", "photo"].includes(resolvedContentType)) errors.push("contentType must be video or photo");
+  // 1:1 only makes sense for the photo path — the video model (Kling) is
+  // only verified against 16:9/9:16, don't let a paid video job request it.
+  const allowedAspectRatios = resolvedContentType === "photo" ? ["16:9", "9:16", "1:1"] : ["16:9", "9:16"];
+  if (!allowedAspectRatios.includes(aspectRatio)) errors.push(`aspectRatio must be one of ${allowedAspectRatios.join(", ")}`);
   const scenes = Number(sceneCount);
   if (!Number.isInteger(scenes) || scenes < 1 || scenes > 10) errors.push("sceneCount must be an integer 1-10");
   if (errors.length) {
@@ -57,6 +62,7 @@ async function handleSubmit(req, res) {
     status: "queued",
     clientName,
     prompt,
+    contentType: resolvedContentType,
     aspectRatio,
     sceneCount: scenes,
     masterFacePathname,
@@ -64,6 +70,7 @@ async function handleSubmit(req, res) {
     updatedAt: now,
     resultVideoPathname: null,
     resultSrtPathname: null,
+    resultImagesZipPathname: null,
     error: null,
   };
 
