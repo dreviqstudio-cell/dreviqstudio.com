@@ -1,7 +1,14 @@
 import { put } from "@vercel/blob";
 import { COOKIE_NAME, verifySessionToken, parseCookie } from "../lib/session.js";
 
-export const config = { runtime: "edge" };
+// Node.js runtime (default for this file) — NOT edge. @vercel/blob depends
+// on `undici`, which needs Node builtins (node:stream, node:net, node:tls,
+// ...) unavailable in the Edge sandbox; deploying this as an edge function
+// fails at build time with "referencing unsupported modules". Node's
+// classic (req, res) handler signature is used here deliberately — this
+// Vercel setup's Node runtime does NOT dispatch api/*.js with the Fetch
+// Request/Response signature used in login/logout (those stay on edge,
+// which doesn't need @vercel/blob).
 
 function base64ToBytes(base64) {
   const binary = atob(base64);
@@ -18,25 +25,21 @@ function base64ToBytes(base64) {
  * NOT run the pipeline itself — Vercel functions can't run a multi-minute
  * Python/Whisper/ffmpeg process.
  */
-export default async function handler(request) {
-  if (request.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   const secret = process.env.ADMIN_SESSION_SECRET;
-  const token = parseCookie(request.headers.get("cookie"), COOKIE_NAME);
+  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
   if (!secret || !(await verifySessionToken(token, secret))) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 });
-  }
-
-  const { clientName, prompt, aspectRatio, sceneCount, masterFaceDataUrl } = body || {};
+  const body = req.body || {};
+  const { clientName, prompt, aspectRatio, sceneCount, masterFaceDataUrl } = body;
   const errors = [];
   if (!clientName || typeof clientName !== "string") errors.push("clientName is required");
   if (!prompt || typeof prompt !== "string") errors.push("prompt is required");
@@ -45,7 +48,8 @@ export default async function handler(request) {
   if (!Number.isInteger(scenes) || scenes < 1 || scenes > 10) errors.push("sceneCount must be an integer 1-10");
 
   if (errors.length) {
-    return new Response(JSON.stringify({ error: "Validation failed", details: errors }), { status: 422 });
+    res.status(422).json({ error: "Validation failed", details: errors });
+    return;
   }
 
   const id = `job_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -54,13 +58,15 @@ export default async function handler(request) {
   if (typeof masterFaceDataUrl === "string" && masterFaceDataUrl.startsWith("data:")) {
     const match = masterFaceDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!match) {
-      return new Response(JSON.stringify({ error: "masterFaceDataUrl is not a valid data URL" }), { status: 422 });
+      res.status(422).json({ error: "masterFaceDataUrl is not a valid data URL" });
+      return;
     }
     const [, mime, b64] = match;
     const ext = mime.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
     const bytes = base64ToBytes(b64);
     if (bytes.length > 8 * 1024 * 1024) {
-      return new Response(JSON.stringify({ error: "Reference photo too large (max 8MB)" }), { status: 413 });
+      res.status(413).json({ error: "Reference photo too large (max 8MB)" });
+      return;
     }
     const uploaded = await put(`jobs/${id}/face.${ext}`, bytes, {
       access: "private",
@@ -93,8 +99,5 @@ export default async function handler(request) {
     contentType: "application/json",
   });
 
-  return new Response(JSON.stringify({ ok: true, job }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  res.status(200).json({ ok: true, job });
 }

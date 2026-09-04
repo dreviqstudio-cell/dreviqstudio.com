@@ -1,30 +1,36 @@
 import { get } from "@vercel/blob";
 import { COOKIE_NAME, verifySessionToken, parseCookie } from "../lib/session.js";
 
-export const config = { runtime: "edge" };
-
-export default async function handler(request) {
-  if (request.method !== "GET") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 });
+// Node.js runtime (not edge) — see admin-submit-job.js for why.
+export default async function handler(req, res) {
+  if (req.method !== "GET") {
+    res.status(405).json({ error: "Method not allowed" });
+    return;
   }
 
   const secret = process.env.ADMIN_SESSION_SECRET;
-  const token = parseCookie(request.headers.get("cookie"), COOKIE_NAME);
+  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
   if (!secret || !(await verifySessionToken(token, secret))) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  if (!id || !/^job_[a-z0-9]+$/i.test(id)) {
-    return new Response(JSON.stringify({ error: "Invalid job id" }), { status: 400 });
+  const id = req.query.id;
+  if (!id || Array.isArray(id) || !/^job_[a-z0-9]+$/i.test(id)) {
+    res.status(400).json({ error: "Invalid job id" });
+    return;
   }
 
   const result = await get(`jobs/${id}.json`, { access: "private", useCache: false });
-  if (!result) {
-    return new Response(JSON.stringify({ error: "Job not found" }), { status: 404 });
+  if (!result || result.statusCode !== 200) {
+    res.status(404).json({ error: "Job not found" });
+    return;
   }
 
-  const text = await new Response(result.stream).text();
-  return new Response(text, { status: 200, headers: { "Content-Type": "application/json" } });
+  const chunks = [];
+  for await (const chunk of result.stream) chunks.push(chunk);
+  const text = Buffer.concat(chunks.map((c) => Buffer.from(c))).toString("utf-8");
+
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).send(text);
 }
