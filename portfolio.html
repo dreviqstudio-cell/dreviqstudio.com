@@ -45,57 +45,85 @@
   <div class="page-hero-glow"></div>
   <div class="wrap-md">
     <div class="eyebrow">Portfolio</div>
-    <h1>Work in progress.</h1>
-    <p>Our first campaigns are currently in production — including our own flagship brand, built entirely with our AI pipeline. Check back soon.</p>
+    <h1>Real output, added as we ship it.</h1>
+    <p>Every piece below came out of the Dreviq engine — not stock footage, not a mockup.</p>
   </div>
 </section>
 
 <section class="section-alt" style="padding-top:0;">
+  <style>
+    .portfolio-filters{ display:flex; gap:10px; justify-content:center; margin-bottom:32px; flex-wrap:wrap; }
+    .portfolio-filter-btn{
+      padding:9px 20px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer;
+      background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--mid);
+    }
+    .portfolio-filter-btn.active{ background:var(--indigo-soft); border-color:var(--indigo-soft); color:#0B0F17; }
+    .portfolio-empty{ color:var(--mid); font-size:14px; text-align:center; padding:40px 20px; grid-column:1/-1; }
+  </style>
   <div class="wrap-lg">
+    <div class="portfolio-filters">
+      <button type="button" class="portfolio-filter-btn active" data-type="all">All</button>
+      <button type="button" class="portfolio-filter-btn" data-type="video">Videos</button>
+      <button type="button" class="portfolio-filter-btn" data-type="image">Photos</button>
+    </div>
     <div class="portfolio-grid" id="portfolioGrid">
-      <div class="card hoverable portfolio-card">
-        <video class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" controls muted loop playsinline poster="portfolio-video-1-poster.jpg">
-          <source src="portfolio-video-1.mp4" type="video/mp4">
-        </video>
-        <div class="portfolio-body">
-          <h3>Synthetic UGC — Fashion &amp; Beauty Demo</h3>
-          <p>AI-generated spokesperson content demonstrating natural movement, lighting, and styling for fashion and cosmetics brand campaigns.</p>
-          <span class="portfolio-tag">Synthetic UGC &amp; AI Avatars</span>
-        </div>
-      </div>
+      <div class="portfolio-empty">Loading…</div>
     </div>
   </div>
   <script>
-    // Static demo card above is the fallback shown while this loads (and
-    // if the fetch fails) — real admin-uploaded items replace it once
-    // loaded, most recent first.
+    // Filter tabs work purely on item.mediaType (video/image) -- the same
+    // field an admin upload already sets by picking "Video" or "Image" in
+    // the upload form, so no extra tagging step is needed for an item to
+    // land in the right tab. ?type=video or ?type=image in the URL
+    // (linked from the homepage/services service cards) pre-selects a tab.
     (function () {
-      fetch('/api/portfolio-public')
-        .then((r) => r.json())
-        .then((data) => {
-          if (!data.items || !data.items.length) return; // keep the static fallback
-          const grid = document.getElementById('portfolioGrid');
-          grid.innerHTML = '';
-          data.items.forEach((item) => {
-            const mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
-            const posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
-            const mediaHtml = item.mediaType === 'video'
-              ? `<video class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" controls muted loop playsinline poster="${posterUrl}"><source src="${mediaUrl}" type="video/mp4"></video>`
-              : `<img class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" src="${mediaUrl}" alt="${item.title}">`;
-            const card = document.createElement('div');
-            card.className = 'card hoverable portfolio-card';
-            card.innerHTML = `
+      const grid = document.getElementById('portfolioGrid');
+      const filterBtns = Array.from(document.querySelectorAll('.portfolio-filter-btn'));
+      let allItems = [];
+
+      function render(type) {
+        const items = type === 'all' ? allItems : allItems.filter((item) => item.mediaType === type);
+        if (!items.length) {
+          grid.innerHTML = '<div class="portfolio-empty">Nothing here yet — check back soon.</div>';
+          return;
+        }
+        grid.innerHTML = items.map((item) => {
+          const mediaUrl = '/api/portfolio-public?path=' + encodeURIComponent(item.mediaPathname);
+          const posterUrl = item.posterPathname ? '/api/portfolio-public?path=' + encodeURIComponent(item.posterPathname) : '';
+          const mediaHtml = item.mediaType === 'video'
+            ? `<video class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" controls muted loop playsinline poster="${posterUrl}"><source src="${mediaUrl}" type="video/mp4"></video>`
+            : `<img class="portfolio-thumb" style="width:100%; height:auto; object-fit:cover;" src="${mediaUrl}" alt="${item.title}">`;
+          return `
+            <div class="card hoverable portfolio-card">
               ${mediaHtml}
               <div class="portfolio-body">
                 <h3>${item.title}</h3>
                 <p>${item.description || ''}</p>
                 <span class="portfolio-tag">${item.category}</span>
               </div>
-            `;
-            grid.appendChild(card);
-          });
+            </div>
+          `;
+        }).join('');
+      }
+
+      function setActiveTab(type) {
+        filterBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.type === type));
+        render(type);
+      }
+
+      filterBtns.forEach((btn) => btn.addEventListener('click', () => setActiveTab(btn.dataset.type)));
+
+      fetch('/api/portfolio-public')
+        .then((r) => r.json())
+        .then((data) => {
+          allItems = data.items || [];
+          const requestedType = new URLSearchParams(window.location.search).get('type');
+          const initialType = ['video', 'image'].includes(requestedType) ? requestedType : 'all';
+          setActiveTab(initialType);
         })
-        .catch(() => { /* keep static fallback on any error */ });
+        .catch(() => {
+          grid.innerHTML = '<div class="portfolio-empty">Could not load the portfolio right now — try refreshing.</div>';
+        });
     })();
   </script>
 </section>
@@ -117,6 +145,7 @@
         <span class="brand-name">DREVIQ STUDIO</span>
       </div>
       <p>The Creative AI Operating System powering high-volume performance brands.</p>
+      <a href="https://www.instagram.com/dreviqstudio/" target="_blank" rel="noopener" style="color:var(--mid); font-size:13px; display:inline-block; margin-top:10px;">📷 @dreviqstudio on Instagram</a>
     </div>
     <div class="foot-col">
       <h4>Studio</h4>

@@ -42,40 +42,23 @@
   </div>
 </header>
 
-<section class="hero">
-  <div class="hero-glow"></div>
-  <div class="wrap-lg hero-grid" style="grid-template-columns:1fr; max-width:720px; margin:0 auto; text-align:center;">
-    <div>
-      <div class="eyebrow">⚡ Next-Gen AI Creative Engine</div>
-      <h1>Scale your brand's creatives without traditional agency overhead.</h1>
-      <p class="sub" style="margin-left:auto; margin-right:auto;">From hyper-realistic synthetic UGC creators to cinematic product visuals — engineered fast, without the agency overhead.</p>
-      <div class="hero-ctas" style="justify-content:center;">
-        <a href="contact.html" class="btn btn-primary">Get a Free Quote →</a>
-        <a href="process.html" class="btn btn-ghost">Explore Workflows</a>
-      </div>
-      <div class="trust-row" style="justify-content:center;">
-        <span>🛡 Zero Studio Bookings</span>
-        <span>🛡 100% Commercial Rights</span>
-      </div>
-    </div>
-  </div>
-</section>
-
 <section class="section-alt">
   <style>
     .works-slider-wrap{ position:relative; }
-    .works-slider{ display:flex; gap:18px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 4px 12px; scrollbar-width:none; }
+    .works-slider{ display:flex; gap:24px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 4px 12px; scrollbar-width:none; }
     .works-slider::-webkit-scrollbar{ display:none; }
-    .works-card{ flex:0 0 280px; scroll-snap-align:start; border-radius:16px; overflow:hidden; background:var(--card); border:1px solid var(--border); }
-    .works-card video, .works-card img{ width:100%; height:180px; object-fit:contain; display:block; background:#000; }
-    .works-card-body{ padding:14px 16px; }
-    .works-card-body h4{ font-size:14px; margin-bottom:4px; font-family:var(--disp); font-weight:600; }
+    .works-card{ flex:0 0 240px; scroll-snap-align:start; }
+    .works-card video, .works-card img{ width:100%; height:300px; object-fit:contain; display:block; background:#000; border-radius:10px; }
+    .works-card-body{ padding:10px 2px 0; }
+    .works-card-body h4{ font-size:13.5px; margin-bottom:3px; font-family:var(--disp); font-weight:600; }
     .works-card-body span{ font-size:11px; color:var(--indigo-soft); text-transform:uppercase; letter-spacing:0.05em; }
-    .works-arrow{ position:absolute; top:78px; transform:translateY(-50%); z-index:5; width:38px; height:38px; border-radius:50%; background:rgba(11,15,23,0.85); border:1px solid var(--border); color:var(--hi); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .works-arrow{ position:absolute; top:150px; transform:translateY(-50%); z-index:5; width:38px; height:38px; border-radius:50%; background:rgba(11,15,23,0.85); border:1px solid var(--border); color:var(--hi); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .works-arrow-left{ left:-6px; }
     .works-arrow-right{ right:-6px; }
     .works-empty{ color:var(--mid); font-size:14px; padding:50px 20px; text-align:center; width:100%; }
     .works-empty a{ color:var(--indigo-soft); text-decoration:underline; }
+    .works-insta{ display:inline-block; margin-top:10px; color:var(--indigo-soft); text-decoration:none; font-size:13px; }
+    .works-insta:hover{ text-decoration:underline; }
     @media (max-width:700px){ .works-arrow{ display:none; } }
   </style>
   <div class="wrap-lg">
@@ -83,8 +66,9 @@
       <div class="eyebrow">Our Works</div>
       <h2>See it in motion.</h2>
       <p>Real output from the Dreviq engine, added as we ship it — not stock footage.</p>
+      <a class="works-insta" href="https://www.instagram.com/dreviqstudio/" target="_blank" rel="noopener">📷 Follow @dreviqstudio on Instagram →</a>
     </div>
-    <div class="works-slider-wrap">
+    <div class="works-slider-wrap" style="margin-top:24px;">
       <button class="works-arrow works-arrow-left" id="worksPrev" aria-label="Previous">‹</button>
       <div class="works-slider" id="worksSlider"><div class="works-empty">Loading…</div></div>
       <button class="works-arrow works-arrow-right" id="worksNext" aria-label="Next">›</button>
@@ -116,6 +100,25 @@
   </script>
 </section>
 
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="wrap-lg hero-grid" style="grid-template-columns:1fr; max-width:720px; margin:0 auto; text-align:center;">
+    <div>
+      <div class="eyebrow">⚡ Next-Gen AI Creative Engine</div>
+      <h1>Scale your brand's creatives without traditional agency overhead.</h1>
+      <p class="sub" style="margin-left:auto; margin-right:auto;">From hyper-realistic synthetic UGC creators to cinematic product visuals — engineered fast, without the agency overhead.</p>
+      <div class="hero-ctas" style="justify-content:center;">
+        <a href="contact.html" class="btn btn-primary">Get a Free Quote →</a>
+        <a href="process.html" class="btn btn-ghost">Explore Workflows</a>
+      </div>
+      <div class="trust-row" style="justify-content:center;">
+        <span>🛡 Zero Studio Bookings</span>
+        <span>🛡 100% Commercial Rights</span>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="section-alt">
   <div class="wrap-lg">
     <div class="section-head center" style="margin-left:auto;margin-right:auto;text-align:center;">
@@ -124,16 +127,16 @@
       <p>Full-funnel creative assets conditioned on your exact brand identity.</p>
     </div>
     <div class="grid-2">
-      <div class="card hoverable bento-card">
+      <a href="portfolio.html?type=video" class="card hoverable bento-card" style="text-decoration:none; color:inherit; display:block;">
         <div class="icon-box">👤</div>
         <h3>Synthetic UGC &amp; AI Avatars</h3>
         <p>AI spokespersons with a locked, consistent identity across every clip, built for rapid direct-response ad iteration.</p>
-      </div>
-      <div class="card hoverable bento-card">
+      </a>
+      <a href="portfolio.html?type=image" class="card hoverable bento-card" style="text-decoration:none; color:inherit; display:block;">
         <div class="icon-box">📷</div>
         <h3>AI Lifestyle &amp; Product Shoots</h3>
         <p>Flawless studio lighting and hyper-realistic scene composition without shipping products to photographers.</p>
-      </div>
+      </a>
     </div>
     <div style="text-align:center; margin-top:36px;">
       <a href="services.html" class="btn btn-ghost">See Full Service Breakdown →</a>
@@ -162,6 +165,7 @@
         <span class="brand-name">DREVIQ STUDIO</span>
       </div>
       <p>The Creative AI Operating System powering high-volume performance brands.</p>
+      <a href="https://www.instagram.com/dreviqstudio/" target="_blank" rel="noopener" style="color:var(--mid); font-size:13px; display:inline-block; margin-top:10px;">📷 @dreviqstudio on Instagram</a>
     </div>
     <div class="foot-col">
       <h4>Studio</h4>
