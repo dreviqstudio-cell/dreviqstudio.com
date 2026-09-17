@@ -47,7 +47,7 @@
     .works-slider-wrap{ position:relative; }
     .works-slider{ display:flex; gap:24px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 4px 12px; scrollbar-width:none; }
     .works-slider::-webkit-scrollbar{ display:none; }
-    .works-card{ flex:0 0 240px; scroll-snap-align:start; }
+    .works-card{ flex:0 0 240px; scroll-snap-align:start; display:block; text-decoration:none; color:inherit; cursor:pointer; }
     .works-card video, .works-card img{ width:100%; height:300px; object-fit:contain; display:block; background:#000; border-radius:10px; }
     .works-card-body{ padding:10px 2px 0; }
     .works-card-body h4{ font-size:13.5px; margin-bottom:3px; font-family:var(--disp); font-weight:600; }
@@ -89,7 +89,8 @@
           var mediaHtml = item.mediaType === 'video'
             ? '<video src="' + mediaUrl + '" poster="' + posterUrl + '" muted loop playsinline preload="metadata" onmouseover="this.play()" onmouseout="this.pause()"></video>'
             : '<img src="' + mediaUrl + '" alt="' + item.title + '" loading="lazy">';
-          return '<div class="works-card">' + mediaHtml + '<div class="works-card-body"><h4>' + item.title + '</h4><span>' + item.category + '</span></div></div>';
+          var portfolioLink = 'portfolio.html?type=' + encodeURIComponent(item.mediaType);
+          return '<a class="works-card" href="' + portfolioLink + '">' + mediaHtml + '<div class="works-card-body"><h4>' + item.title + '</h4><span>' + item.category + '</span></div></a>';
         }).join('');
       }).catch(function(){
         slider.innerHTML = '<div class="works-empty">Portfolio launching soon.</div>';
