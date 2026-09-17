@@ -11,3 +11,14 @@ B2_APPLICATION_KEY=
 B2_BUCKET=dreviq-jobs
 B2_ENDPOINT=https://s3.us-west-004.backblazeb2.com
 B2_REGION=us-west-004
+
+# WhatsApp Cloud API (Meta) — triggers a Shilpi reel by WhatsApp message.
+# Get these from developers.facebook.com (Meta app -> WhatsApp product).
+WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+# Meta app secret, used to verify inbound webhook POSTs are really from Meta.
+WHATSAPP_APP_SECRET=
+# Any string you make up — paste the SAME value into Meta's webhook setup screen.
+WHATSAPP_VERIFY_TOKEN=
+# Comma-separated E.164 numbers WITHOUT "+" allowed to trigger jobs, e.g. 919876543210
+WHATSAPP_ALLOWED_NUMBERS=
