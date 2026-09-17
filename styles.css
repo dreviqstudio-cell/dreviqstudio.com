@@ -236,8 +236,8 @@ section{ padding:80px 0; }
 .portfolio-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:22px; }
 .portfolio-card{ overflow:hidden; }
 .portfolio-thumb{
-  aspect-ratio: 4/3; display:flex; align-items:center; justify-content:center;
-  background: linear-gradient(135deg, rgba(99,102,241,0.15), rgba(167,139,250,0.06));
+  max-height:480px; display:block; margin:0 auto;
+  background:#000;
   border-bottom:1px solid var(--border); color: var(--indigo-soft); font-size:30px;
 }
 .portfolio-body{ padding:22px; }
