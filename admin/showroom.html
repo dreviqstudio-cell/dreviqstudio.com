@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Showroom Ad | Dreviq Studio Admin</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  .admin-header{ position:sticky; top:0; z-index:50; background:rgba(11,15,23,0.85); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); }
+  .admin-header .row{ height:64px; display:flex; align-items:center; justify-content:space-between; }
+  .admin-header .brand{ display:flex; align-items:center; gap:10px; }
+  .admin-header .brand img{ width:30px; height:30px; }
+  .admin-header .brand span{ font-family:var(--disp); font-size:14px; font-weight:600; letter-spacing:0.16em; }
+  .admin-main{ padding:48px 0 80px; }
+  .admin-page-title{ font-size:26px; margin-bottom:6px; }
+  .admin-page-sub{ color:var(--mid); font-size:14px; margin-bottom:32px; }
+  .job-form{ padding:28px; }
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:13px; color:var(--mid); margin-bottom:6px; }
+  .field input, .field select, .field textarea{
+    width:100%; padding:11px 14px; border-radius:10px; font-size:14px;
+    background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi);
+    font-family:var(--body);
+  }
+  .field textarea{ min-height:120px; resize:vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--border-hi); }
+  .field-check{ display:flex; align-items:center; gap:8px; }
+  .field-check input{ width:auto; }
+  .field-hint{ color:var(--low); font-size:12px; margin-top:6px; }
+  .banner{ padding:14px 16px; border-radius:10px; font-size:13px; margin-bottom:22px; display:none; }
+  .banner.info{ background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); color:var(--indigo-soft); }
+  .banner.error{ background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.3); color:#F87171; }
+  .banner.show{ display:block; }
+  .logout-btn{ background:none; border:1px solid var(--border); color:var(--mid); padding:8px 16px; border-radius:999px; font-size:13px; }
+  .logout-btn:hover{ color:var(--hi); border-color:var(--border-hi); }
+  .broll-row{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .broll-row-remove{ background:none; border:none; color:var(--mid); font-size:12px; cursor:pointer; padding:2px 6px; }
+  .broll-row-remove:hover{ color:#F87171; }
+  .checks{ display:flex; flex-wrap:wrap; gap:8px 18px; }
+  .checks label{ display:flex; align-items:center; gap:6px; font-size:14px; color:var(--hi); margin:0; }
+  .checks input{ width:auto; }
+  .est{ font-size:13px; margin-top:6px; }
+  .est.ok{ color:#34D399; } .est.bad{ color:#F87171; }
+  .thumbs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .thumbs img{ width:72px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <div class="wrap-lg row">
+    <div class="brand">
+      <img src="../logo-icon.png" alt="Dreviq Studio">
+      <span>DREVIQ STUDIO — ADMIN</span>
+    </div>
+    <nav style="display:flex; gap:18px;">
+      <a href="dashboard.html" style="font-size:13px; color:var(--mid);">Production</a>
+      <a href="shilpi.html" style="font-size:13px; color:var(--mid);">Shilpi Studio</a>
+      <a href="showroom.html" class="current" style="font-size:13px; color:var(--hi);">Showroom Ad</a>
+      <a href="portfolio.html" style="font-size:13px; color:var(--mid);">Portfolio</a>
+      <a href="inquiries.html" style="font-size:13px; color:var(--mid);">Inquiries</a>
+      <a href="reviews.html" style="font-size:13px; color:var(--mid);">Reviews</a>
+      <a href="leads.html" style="font-size:13px; color:var(--mid);">Shilpi Conversations</a>
+    </nav>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+</header>
+
+<main class="admin-main">
+  <div class="wrap-sm">
+    <h1 class="admin-page-title">Preowned car showroom ad</h1>
+    <p class="admin-page-sub">Fill the details, add showroom photos, press the button. You get one message to paste into WhatsApp — Shilpi then makes the ad (under 20 seconds) and sends it back.</p>
+
+    <div class="banner error" id="errorBanner"></div>
+
+    <form id="showForm" class="card job-form">
+      <div class="field">
+        <label for="name">Showroom name (in Odia, exactly how Shilpi should say it)</label>
+        <input type="text" id="name" required placeholder="ଶ୍ରୀ ଜଗନ୍ନାଥ ମୋଟର୍ସ" />
+      </div>
+      <div class="field">
+        <label for="place">City / area (in Odia)</label>
+        <input type="text" id="place" required placeholder="ଭୁବନେଶ୍ୱର" />
+      </div>
+      <div class="field">
+        <label for="phone">Phone number to call (digits only)</label>
+        <input type="tel" id="phone" required placeholder="9876543210" inputmode="numeric" />
+      </div>
+      <div class="field">
+        <label>What to mention (pick 2 — more makes it too long)</label>
+        <div class="checks" id="offers">
+          <label><input type="checkbox" value="ସହଜ ଫାଇନାନ୍ସ ସୁବିଧା" checked /> Easy finance</label>
+          <label><input type="checkbox" value="ପୁରୁଣା କାର୍ ଏକ୍ସଚେଞ୍ଜ ସୁବିଧା" /> Old car exchange</label>
+          <label><input type="checkbox" value="ପ୍ରତ୍ୟେକ କାର୍ ଭଲ ଭାବେ ଯାଞ୍ଚ ହୋଇଛି" checked /> Every car inspected</label>
+          <label><input type="checkbox" value="ୱାରେଣ୍ଟି ସହିତ କାର୍" /> Warranty</label>
+          <label><input type="checkbox" value="ସବୁ କାଗଜପତ୍ର ସଫା" /> Papers clear</label>
+          <label><input type="checkbox" value="ସଠିକ୍ ଦାମ୍" /> Fair price</label>
+        </div>
+      </div>
+      <div class="field">
+        <label for="photos">Showroom / car photos (up to 5, shown in the middle of the ad)</label>
+        <input type="file" id="photos" accept="image/*" multiple />
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+      <div class="field">
+        <label for="script">What Shilpi will say (you can edit this)</label>
+        <textarea id="script" required></textarea>
+        <p class="est" id="est"></p>
+      </div>
+      <button type="submit" class="btn btn-primary" id="submitBtn">Upload photos &amp; make WhatsApp message</button>
+    </form>
+
+    <div class="card" id="result" style="display:none; margin-top:20px; padding:22px;">
+      <strong style="font-family:var(--disp); font-size:15px;">Copy this and paste it into WhatsApp</strong>
+      <textarea id="msg" readonly style="width:100%; min-height:200px; margin-top:12px; padding:12px; border-radius:10px; font-size:14px; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--hi);"></textarea>
+      <button type="button" class="btn btn-primary btn-sm" id="copyBtn" style="margin-top:12px;">Copy message</button>
+      <p class="field-hint">Send it to the Shilpi WhatsApp number. The photos stay stored for this message only — if you change the photos, come back here and make a new message.</p>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await fetch('/api/admin-auth?action=logout', { method: 'POST' });
+    window.location.href = '/admin/login.html';
+  });
+
+  const MAX_SECONDS = 20;
+  const SECONDS_PER_CHAR = 0.09; // measured on Sarvam's Odia voice
+  const $ = (id) => document.getElementById(id);
+  let scriptEdited = false;
+
+  function buildScript() {
+    const offers = Array.from(document.querySelectorAll('#offers input:checked')).map((i) => i.value).join(', ');
+    const digits = $('phone').value.replace(/\D/g, '').split('').join(' ');
+    const name = $('name').value.trim() || '…';
+    const place = $('place').value.trim() || '…';
+    return `ନମସ୍କାର! ମୁଁ ଶିଳ୍ପୀ। ଭଲ ପ୍ରିଓନ୍ଡ୍ କାର୍ ଚାହୁଁଛନ୍ତି? ଆସନ୍ତୁ ${name}, ${place}। ${offers ? offers + '।' : ''} ଫୋନ୍ କରନ୍ତୁ ${digits}।`.replace(/\s+/g, ' ');
+  }
+
+  function updateEstimate() {
+    const secs = $('script').value.length * SECONDS_PER_CHAR;
+    const est = $('est');
+    const ok = secs <= MAX_SECONDS - 1;
+    est.textContent = `About ${secs.toFixed(0)} seconds when spoken — ${ok ? 'fits in 20 seconds' : 'TOO LONG, must be under 20 seconds. Remove an item or shorten the text.'}`;
+    est.className = 'est ' + (ok ? 'ok' : 'bad');
+    return ok;
+  }
+
+  function refreshScript() {
+    if (!scriptEdited) $('script').value = buildScript();
+    updateEstimate();
+  }
+  ['name', 'place', 'phone'].forEach((id) => $(id).addEventListener('input', refreshScript));
+  $('offers').addEventListener('change', refreshScript);
+  $('script').addEventListener('input', () => { scriptEdited = true; updateEstimate(); });
+  refreshScript();
+
+  $('photos').addEventListener('change', () => {
+    const thumbs = $('thumbs');
+    thumbs.innerHTML = '';
+    Array.from($('photos').files).slice(0, 5).forEach((f) => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(f);
+      thumbs.appendChild(img);
+    });
+  });
+
+  // Phone photos are 3-12 MB each; shrink to 1080 px wide before uploading.
+  function shrink(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 1080 / img.width);
+        const c = document.createElement('canvas');
+        c.width = Math.round(img.width * scale);
+        c.height = Math.round(img.height * scale);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read a photo'))), 'image/jpeg', 0.88);
+      };
+      img.onerror = () => reject(new Error('Could not read a photo'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function uploadDirect(pathname, blob) {
+    const tokenRes = await fetch('/api/admin-shilpi?action=blob-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pathname, contentType: 'image/jpeg' }),
+    });
+    if (tokenRes.status === 401) { window.location.href = '/admin/login.html'; throw new Error('Please log in again'); }
+    if (!tokenRes.ok) throw new Error('Upload authorization failed');
+    const { url } = await tokenRes.json();
+    const put = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: blob });
+    if (!put.ok) throw new Error(`Photo upload failed (${put.status})`);
+  }
+
+  $('showForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const err = $('errorBanner');
+    err.classList.remove('show');
+    if (!updateEstimate()) {
+      err.textContent = 'The script is too long for 20 seconds — remove an item or shorten it first.';
+      err.classList.add('show');
+      return;
+    }
+    const files = Array.from($('photos').files).slice(0, 5);
+    const btn = $('submitBtn');
+    btn.disabled = true;
+    try {
+      const code = `shilpi_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+      for (let i = 0; i < files.length; i++) {
+        btn.textContent = `Uploading photo ${i + 1}/${files.length}…`;
+        await uploadDirect(`shilpi-jobs/${code}/broll_${String(i + 1).padStart(2, '0')}.jpg`, await shrink(files[i]));
+      }
+      const lines = [`Client: ${$('name').value.trim()}`];
+      if (files.length) lines.push(`Photos: ${code}`);
+      lines.push(`Max: ${MAX_SECONDS}`, $('script').value.trim());
+      $('msg').value = lines.join('\n');
+      $('result').style.display = 'block';
+      $('result').scrollIntoView({ behavior: 'smooth' });
+    } catch (ex) {
+      err.textContent = ex.message || 'Something went wrong — try again.';
+      err.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Upload photos & make WhatsApp message';
+    }
+  });
+
+  $('copyBtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('msg').value); }
+    catch { $('msg').select(); document.execCommand('copy'); }
+    $('copyBtn').textContent = 'Copied ✓';
+    setTimeout(() => ($('copyBtn').textContent = 'Copy message'), 2000);
+  });
+</script>
+</body>
+</html>

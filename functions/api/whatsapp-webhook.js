@@ -1,4 +1,4 @@
-import { b2PutJson } from "../_lib/b2.js";
+import { b2PutJson, b2List } from "../_lib/b2.js";
 import { sendWhatsAppText, isAllowedSender, verifyMetaSignature } from "../_lib/whatsapp.js";
 
 // Lets the user (and only the user — see isAllowedSender) trigger a Shilpi
@@ -7,8 +7,8 @@ import { sendWhatsAppText, isAllowedSender, verifyMetaSignature } from "../_lib/
 // write into the same shilpi-jobs/ B2 prefix that page writes into — the
 // worker doesn't know or care which path created a job.
 //
-// Deliberately text-only for v1: no product-photo b-roll via WhatsApp
-// (that still needs the website, where multi-file upload is easy). This
+// Photos can't travel over WhatsApp text, so admin/showroom.html uploads them
+// first and puts a "Photos: <code>" line in the message to paste here. This
 // avoids needing a whole stateful multi-message "conversation" just to
 // collect a batch of photos before queuing — one message in, one job
 // queued, nothing to get stuck half-finished.
@@ -23,7 +23,22 @@ function makeJobId() {
 }
 
 function parseCommand(text) {
-  const lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+  let lines = text.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+
+  // Optional header lines, produced by admin/showroom.html's "copy for
+  // WhatsApp" box (any order, anywhere before the script):
+  //   Photos: shilpi_xxxx   -> product photos already uploaded by that page
+  //   Max: 20               -> fail the job if the spoken script exceeds N sec
+  let photoCode = null;
+  let maxSeconds = null;
+  lines = lines.filter((l) => {
+    const photos = l.match(/^photos\s*:\s*(shilpi_[a-z0-9]+)\s*$/i);
+    if (photos) { photoCode = photos[1]; return false; }
+    const max = l.match(/^max\s*:\s*(\d{1,3})\s*$/i);
+    if (max) { maxSeconds = Number(max[1]); return false; }
+    return true;
+  });
+
   if (lines.length < 2) return null;
 
   let clientName = lines[0];
@@ -33,7 +48,7 @@ function parseCommand(text) {
 
   const script = scriptLines.join("\n").trim();
   if (!clientName || !script) return null;
-  return { clientName, script };
+  return { clientName, script, photoCode, maxSeconds };
 }
 
 async function handleVerify(request, env) {
@@ -105,6 +120,23 @@ async function handleIncoming(request, env) {
     return new Response("OK", { status: 200 });
   }
 
+  let brollPathnames = [];
+  if (parsed.photoCode) {
+    const keys = await b2List(env, `shilpi-jobs/${parsed.photoCode}/`).catch(() => []);
+    brollPathnames = keys
+      .filter((k) => /\/broll_\d+\.[a-z0-9]+$/i.test(k))
+      .sort()
+      .slice(0, 6);
+    if (!brollPathnames.length) {
+      await safeSend(
+        env,
+        from,
+        `I couldn't find any photos for code ${parsed.photoCode}. Open the Showroom page on the website, upload the photos again, and paste the new message.`
+      );
+      return new Response("OK", { status: 200 });
+    }
+  }
+
   const id = makeJobId();
   const now = new Date().toISOString();
   const job = {
@@ -112,22 +144,23 @@ async function handleIncoming(request, env) {
     status: "queued",
     clientName: parsed.clientName,
     script: parsed.script,
-    brollPathnames: [],
+    brollPathnames,
     musicPathname: null,
-    captionsEnabled: true,
+    captionsEnabled: false,
     createdAt: now,
     updatedAt: now,
     resultVideoPathname: null,
     error: null,
     source: "whatsapp",
     notifyWhatsapp: from,
+    ...(parsed.maxSeconds ? { maxSeconds: parsed.maxSeconds } : {}),
   };
   await b2PutJson(env, `shilpi-jobs/${id}.json`, job);
 
   await safeSend(
     env,
     from,
-    `Queued for ${parsed.clientName} (${id}). I'll message you here when it's ready — usually a few minutes.`
+    `Queued for ${parsed.clientName} (${id})${brollPathnames.length ? ` with ${brollPathnames.length} photos` : ""}. I'll message you here when it's ready — usually a few minutes.`
   );
 
   return new Response("OK", { status: 200 });
